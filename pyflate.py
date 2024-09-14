@@ -409,6 +409,8 @@ def gzip_main(field: RBitfield):
                 main_literals = OrderedHuffmanTable(code_lengths[:literals])
                 main_distances = OrderedHuffmanTable(code_lengths[literals:])
                 print("Read dynamic huffman tables", b.tellbits() - dyna_start, "bits")
+            else:
+                raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
 
             # Common path for both Static and Dynamic Huffman decode now
 
