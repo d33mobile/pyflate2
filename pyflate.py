@@ -213,7 +213,7 @@ class HuffmanTable:
                 cached_length = x.bits
             if (reversed and x.reverse_symbol == cached) or (not reversed and x.symbol == cached):
                 field.readbits(x.bits)
-                print("found symbol", hex(cached), "of len", cached_length, "mapping to", hex(x.code))
+                print("found symbol", hex(cached) if cached is not None else cached, "of len", cached_length, "mapping to", hex(x.code))
                 return x.code
         raise Exception("unfound symbol, even after end of table @ " + repr(field.tell()))
             
@@ -264,18 +264,20 @@ def move_to_front(l: T.List[int], c: int) -> None:
 
 def bwt_transform(L: bytes) -> T.List[int]:
     # Semi-inefficient way to get the character counts
-    F = b''.join(sorted(L))
-    base = list(map(F.find,list(map(chr,list(range(256))))))
+    F = bytes(sorted(L))
+    #base = list(map(F.find,list(map(chr,list(range(256))))))
+    base = [F.find(bytes([i])) for i in range(256)]
 
     pointers = [-1] * len(L)
     #for symbol, i in map(None, list(map(ord,L)), range(len(L))):
-    for symbol, i in zip(map(ord,L), range(len(L))):
+    # but L is bytes, so no need to ord() it
+    for i, symbol in enumerate(L):
         pointers[base[symbol]] = i
         base[symbol] += 1
     return pointers
 
-def bwt_reverse(L, end):
-    out = ''
+def bwt_reverse(L: bytes, end: int) -> bytes:
+    out = b''
     if len(L):
         T = bwt_transform(L)
 
@@ -299,7 +301,7 @@ def bwt_reverse(L, end):
 
         for i in range(len(L)):
             end = T[end]
-            out += L[end]
+            out += bytes([L[end]])
 
     return out
 
@@ -389,7 +391,7 @@ def gzip_main(field: RBitfield) -> bytes:
                 # Decode the code_lengths for both tables at once,
                 # then split the list later
 
-                code_lengths = []
+                code_lengths: T.List[int] = []
                 n = 0
                 while n < (literals + distances):
                     r = dynamic_codes.find_next_symbol(b)
