@@ -5,7 +5,7 @@
 # You may use and distribute this code under any DFSG-compatible
 # license (eg. BSD, GNU GPLv2).
 #
-# Stand-alone pure-Python DEFLATE (gzip) and bzip2 decoder/decompressor.
+# Stand-alone pure-Python DEFLATE (gzip) decoder/decompressor.
 # This is probably most useful for research purposes/index building;  there
 # is certainly some room for improvement in the Huffman bit-matcher.
 #
@@ -14,8 +14,10 @@
 # see 'bwt_reverse()'.  Correct output is produced in all test cases
 # but ideally the problem would be found...
 
+import typing as T
+
 class BitfieldBase:
-    def __init__(self, x):
+    def __init__(self, x: T.Union[bytes, 'BitfieldBase']) -> None:
         if isinstance(x,BitfieldBase):
             self.f = x.f
             self.bits = x.bits
@@ -26,22 +28,22 @@ class BitfieldBase:
             self.bits = 0
             self.bitfield = 0x0
             self.count = 0
-    def _read(self, n):
+    def _read(self, n: int) -> bytes:
         s = self.f.read(n)
         if not s:
-            raise "Length Error"
+            raise Exception("Length Error")
         self.count += len(s)
         return s
-    def needbits(self, n):
+    def needbits(self, n: int) -> None:
         while self.bits < n:
             self._more()
-    def _mask(self, n):
+    def _mask(self, n: int) -> int:
         return (1 << n) - 1
-    def toskip(self):
+    def toskip(self) -> int:
         return self.bits & 0x7
-    def align(self):
+    def align(self) -> None:
         self.readbits(self.toskip())
-    def dropbits(self, n = 8):
+    def dropbits(self, n: int = 8) -> None:
         while n >= self.bits and n > 7:
             n -= self.bits
             self.bits = 0
@@ -49,24 +51,24 @@ class BitfieldBase:
         if n:
             self.readbits(n)
         # No return value
-    def dropbytes(self, n = 1):
+    def dropbytes(self, n: int = 1) -> None:
         self.dropbits(n << 3)
-    def tell(self):
+    def tell(self) -> T.Tuple[int, int]:
         return self.count - ((self.bits+7) >> 3), 7 - ((self.bits-1) & 0x7)
-    def tellbits(self):
+    def tellbits(self) -> int:
         bytes, bits = self.tell()
         return (bytes << 3) + bits
 
 class Bitfield(BitfieldBase):
-    def _more(self):
+    def _more(self) -> None:
         c = self._read(1)
         self.bitfield += ord(c) << self.bits
         self.bits += 8
-    def snoopbits(self, n = 8):
+    def snoopbits(self, n: int = 8) -> int:
         if n > self.bits:
             self.needbits(n)
         return self.bitfield & self._mask(n)
-    def readbits(self, n = 8):
+    def readbits(self, n: int = 8) -> int:
         if n > self.bits:
             self.needbits(n)
         r = self.bitfield & self._mask(n)
@@ -75,16 +77,16 @@ class Bitfield(BitfieldBase):
         return r
 
 class RBitfield(BitfieldBase):
-    def _more(self):
+    def _more(self) -> None:
         c = self._read(1)
         self.bitfield <<= 8
         self.bitfield += ord(c)
         self.bits += 8
-    def snoopbits(self, n = 8):
+    def snoopbits(self, n: int = 8) -> int:
         if n > self.bits:
             self.needbits(n)
         return (self.bitfield >> (self.bits - n)) & self._mask(n)
-    def readbits(self, n = 8):
+    def readbits(self, n: int = 8) -> int:
         if n > self.bits:
             self.needbits(n)
         r = (self.bitfield >> (self.bits - n)) & self._mask(n)
@@ -92,7 +94,7 @@ class RBitfield(BitfieldBase):
         self.bitfield &= ~(self._mask(n) << self.bits)
         return r
 
-def printbits(v, n):
+def printbits(v: int, n: int) -> str:
     o = ''
     for i in range(n):
         if v & 1:
@@ -107,9 +109,9 @@ class HuffmanLength:
         self.code = code
         self.bits = bits
         self.symbol = None
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr((self.code, self.bits, self.symbol, self.reverse_symbol))
-    def __cmp__(self, other):
+    def __cmp__(self, other) -> int:
         if self.bits == other.bits:
             return cmp(self.code, other.code)
         else:
@@ -128,7 +130,7 @@ class HuffmanLength:
             return self.bits > other.bits
         # ==
 
-def reverse_bits(v, n):
+def reverse_bits(v: int, n: int) -> int:
     a = 1 << 0
     b = 1 << (n - 1)
     z = 0
@@ -208,7 +210,7 @@ class HuffmanTable:
                 field.readbits(x.bits)
                 print("found symbol", hex(cached), "of len", cached_length, "mapping to", hex(x.code))
                 return x.code
-        raise "unfound symbol, even after end of table @ " + repr(field.tell())
+        raise Exception("unfound symbol, even after end of table @ " + repr(field.tell()))
             
         for bits in range(self.min_bits, self.max_bits + 1):
             #print printbits(field.snoopbits(bits),bits)
@@ -217,7 +219,7 @@ class HuffmanTable:
                 field.readbits(bits)
                 return r
             elif bits == self.max_bits:
-                raise "unfound symbol, even after max_bits"
+                raise Exception("unfound symbol, even after max_bits")
 
 class OrderedHuffmanTable(HuffmanTable):
     def __init__(self, lengths):
@@ -241,7 +243,7 @@ def extra_distance_bits(n):
     elif 2 <= n <= 29:
         return (n >> 1) - 1
     else:
-        raise "illegal distance code"
+        raise Exception("illegal distance code")
 
 def extra_length_bits(n):
     if 257 <= n <= 260 or n == 285:
@@ -249,7 +251,7 @@ def extra_length_bits(n):
     elif 261 <= n <= 284:
         return ((n-257) >> 2) - 1
     else:
-        raise "illegal length code"
+        raise Exception("illegal length code")
 
 def move_to_front(l, c):
     l[:] = l[c:c+1] + l[0:c] + l[c+1:]
@@ -295,174 +297,11 @@ def bwt_reverse(L, end):
     return out
 
 # Sixteen bits of magic have been removed by the time we start decoding
-def bzip2_main(input):
-    b = RBitfield(input)
-
-    method = b.readbits(8)
-    if method != ord('h'):
-        raise "Unknown (not type 'h'uffman Bzip2) compression method"
-
-    blocksize = b.readbits(8)
-    if ord('1') <= blocksize <= ord('9'):
-        blocksize = blocksize - ord('0')
-    else:
-        raise "Unknown (not size '0'-'9') Bzip2 blocksize"
-
-    out = ''
-    while True:
-        #header_start = b.tellbits()
-        blocktype = b.readbits(48)
-        crc = b.readbits(32)
-        #print hex(blocktype)
-        #print hex(crc)
-        if blocktype == 0x314159265359: # (pi)
-            print('bzip2 Huffman block')
-            randomised = b.readbits(1)
-            if randomised:
-                raise "Bzip2 randomised support not implemented"
-            pointer = b.readbits(24)
-            #print 'pointer', pointer, hex(pointer)
-            huffman_used_map = b.readbits(16)
-            #print 'used map', hex(huffman_used_map)
-            map_mask = 1 << 15
-            used = []
-            while map_mask > 0:
-                if huffman_used_map & map_mask:
-                    huffman_used_bitmap = b.readbits(16)
-                    bit_mask = 1 << 15
-                    while bit_mask > 0:
-                        if huffman_used_bitmap & bit_mask:
-                            #print 'hit', len(used)
-                            pass
-                        used += [bool(huffman_used_bitmap & bit_mask)]
-                        bit_mask >>= 1
-                else:
-                    used += [False] * 16
-                map_mask >>= 1
-
-            huffman_groups = b.readbits(3)
-            #print 'huffman groups', huffman_groups
-            if not 2 <= huffman_groups <= 6:
-                raise "Bzip2: Number of Huffman groups not in range 2..6"
-            selectors_used = b.readbits(15)
-            #print 'selectors used', selectors_used
-            mtf = list(range(huffman_groups))
-            selectors_list = []
-            for i in range(selectors_used):
-                # zero-terminated bit runs (0..62) of MTF'ed huffman table 
-                c = 0
-                while b.readbits(1):
-                    c += 1
-                    if c >= huffman_groups:
-                        raise "Bzip2 chosen selector greater than number of groups (max 6)"
-                if c >= 0:
-                    move_to_front(mtf, c)
-                #print c, mtf
-                selectors_list += mtf[0:1]
-            groups_lengths = []
-            symbols_in_use = sum(used) + 2  # remember RUN[AB] RLE symbols
-            for j in range(huffman_groups):
-                length = start_huffman_length = b.readbits(5)
-                #print 'start_huffman_length', start_huffman_length
-                lengths = []
-                for i in range(symbols_in_use):
-                    if not 0 <= length <= 20:
-                        raise "Bzip2 Huffman length code outside range 0..20"
-                    while b.readbits(1):
-                        length -= (b.readbits(1) * 2) - 1
-                    lengths += [length]
-                groups_lengths += [lengths]
-                #print groups_lengths
-
-            tables = []
-            for g in groups_lengths:
-                codes = OrderedHuffmanTable(g)
-                codes.populate_huffman_symbols()
-                codes.min_max_bits()
-                tables.append(codes)
-
-            #favourites = map(chr,range(sum(used)))
-            #favourites = string.join([y for x,y in map(None,used,map(chr,range(len(used)))) if x],'')
-            favourites = [y for x,y in map(None,used,list(map(chr,list(range(len(used)))))) if x]
-
-            data_start = b.tellbits()
-            selector_pointer = 0
-            decoded = 0
-            # Main Huffman loop
-            repeat = repeat_power = 0
-            buffer = ''
-            t = None
-            while True:
-                decoded -= 1
-                if decoded <= 0:
-                    #print 'RETABLE TIME', selectors_list[selector_pointer]
-                    decoded = 50 # Huffman table re-evaluate/switch length
-                    if selector_pointer <= len(selectors_list):
-                        t = tables[selectors_list[selector_pointer]]
-                        selector_pointer += 1
-                    #print 'tables changed', tables[0].table
-                #print b.tell()
-                r = t.find_next_symbol(b, False)
-                #print 'symbol', r
-                if 0 <= r <= 1:
-                    if repeat == 0:
-                        repeat_power = 1
-                    #print 'run', repeat
-                    repeat += repeat_power << r
-                    repeat_power <<= 1
-                    continue
-                elif repeat > 0:
-                    # Remember kids: If there is only one repeated
-                    # real symbol, it is encoded with *zero* Huffman
-                    # bits and not output... so buffer[-1] doesn't work.
-                    #print 'runfinal', repeat
-                    buffer += favourites[0] * repeat
-                    repeat = 0
-                if r == symbols_in_use - 1:
-                    #print 'finished', `buffer[:10]`, '..', `buffer[-10:]`, 'len', len(buffer)
-                    break
-                else:
-                    o = favourites[r-1]
-                    #print 'pre ', `favourites`
-                    move_to_front(favourites, r-1)
-                    #print 'post', `favourites`
-                    #print 'output', `o`
-                    buffer += o
-                    pass
-            #print 'huffman', `buffer`, pointer, len(buffer)
-            if True:
-                #nearly_there = bwt_reverse(buffer, len(buffer)-pointer-1)
-                nt = nearly_there = bwt_reverse(buffer, pointer)
-                #print 'nearly there', `nearly_there`
-                done = ''
-                i = 0
-                # Pointless/irritating run-length encoding step
-                while i < len(nearly_there):
-                    #print 'RLE decode', `nt[i:]`
-                    if i < len(nearly_there) - 4 and nt[i] == nt[i+1] == nt[i+2] == nt[i+3]:
-                        done += nearly_there[i] * (ord(nearly_there[i+4]) + 4)
-                        i += 5
-                    else:
-                        done += nearly_there[i]
-                        i += 1
-                out += done
-                #print 'done', `done[:10]`, '..', `done[-10:]`, 'len', len(done)
-            
-            #raise "Bip2 block support not implemented"
-        elif blocktype == 0x177245385090: # sqrt(pi)
-            print('bzip2 end-of-stream block')
-            b.align()
-            break
-        else:
-            raise "Illegal Bzip2 blocktype"
-    return out
-
-# Sixteen bits of magic have been removed by the time we start decoding
-def gzip_main(field):
+def gzip_main(field: RBitfield):
     b = Bitfield(field)
     method = b.readbits(8)
     if method != 8:
-        raise "Unknown (not type eight DEFLATE) compression method"
+        raise Exception("Unknown (not type eight DEFLATE) compression method")
 
     # Use flags, drop modification time, extra flags and OS creator type.
     flags = b.readbits(8)
@@ -505,7 +344,7 @@ def gzip_main(field):
             b.align()
             length = b.readbits(16)
             if length & b.readbits(16):
-                raise "stored block lengths do not match each other"
+                raise Exception("stored block lengths do not match each other")
             #print "stored block of length", length
             #print 'raw data at', b.tell(), 'bits', b.tellbits() - bheader_start
             #print 'header 0 count 0 bits', b.tellbits() - bheader_start
@@ -561,7 +400,7 @@ def gzip_main(field):
                         count = 11 + b.readbits(7)
                         what = 0
                     else:
-                        raise "next code length is outside of the range 0 <= r <= 18"
+                        raise Exception("next code length is outside of the range 0 <= r <= 18")
                     code_lengths += [what] * count
                     n += count
 
@@ -625,11 +464,11 @@ def gzip_main(field):
                         print('dictionary lookup: length', cached_length, end=' ')
                         print('copy', -distance, 'num bits', b.tellbits() - lz_start, 'data', repr(out[-cached_length:]))
                     elif 30 <= r1 <= 31:
-                        raise "illegal unused distance symbol in use @" + repr(b.tell())
+                        raise Exception("illegal unused distance symbol in use @" + repr(b.tell()))
                 elif 286 <= r <= 287:
-                    raise "illegal unused literal/length symbol in use @" + repr(b.tell())
+                    raise Exception("illegal unused literal/length symbol in use @" + repr(b.tell()))
         elif blocktype == 3:
-            raise "illegal unused blocktype in use @" + repr(b.tell())
+            raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
 
         if lastbit:
             print("this was the last block, time to leave", b.tell())
@@ -659,12 +498,10 @@ def _main():
     magic = field.readbits(16)
     if magic == 0x1f8b: # GZip
         out = gzip_main(field)
-    elif magic == 0x425a: # BZip2
-        out = bzip2_main(field)
     else:
-        raise "Unknown file magic "+hex(magic)+", not a gzip/bzip2 file"
+        raise Exception("Unknown file magic "+hex(magic)+", not a gzip file")
 
-    f = open('out', 'w')
+    f = open('/dev/stdout', 'w')
     f.write(out)
     f.close()
     input.close()
@@ -676,18 +513,4 @@ if __name__=='__main__':
         print('\tThe contents will be decoded and decompressed plaintext written to "./out".')
         sys.exit(0)
 
-    profile_code = False
-    if not profile_code:
-        try:
-            import psyco
-            psyco.full()
-            profile_code = False
-        except:
-            pass
-    if profile_code:
-        import profile
-        profile.run('_main()')
-    else:
-        _main()
-
-
+    _main()
