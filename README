@@ -5,14 +5,10 @@ Copyright 2006--2007-01-21 Paul Sladen
 You may use and distribute this code and documentation under any
 DFSG-compatible license (eg. BSD, GNU GPLv2).
 
-Stand-alone pure-Python DEFLATE (gzip) and bzip2 decoder/decompressor,
+Stand-alone pure-Python DEFLATE (gzip) decoder/decompressor,
 'pyflate'.
 
 Example:
-
-  $ ./pyflate.py foo.bz2
-  ...
-  $ ls -l out
 
   $ ./pyflate.py bar.gz
   ...
@@ -29,7 +25,6 @@ statements in the source code, feel free to uncomment some of them!
 As a result of this learning experience, I've been able to update the
 Wikipedia pages with useful technical descriptions:
 
-  http://en.wikipedia.org/wiki/bzip2
   http://en.wikipedia.org/wiki/DEFLATE
 
 Perhaps you could check and see if they could be improved!

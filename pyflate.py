@@ -510,7 +510,7 @@ def _main() -> None:
 if __name__=='__main__':
     if len(sys.argv) != 2:
         program = sys.argv[0]
-        print(program +':', 'usage:', program, '<filename.gz>|<filename.bz2>')
+        print(program +':', 'usage:', program, '<filename.gz>')
         print('\tThe contents will be decoded and decompressed plaintext written to "./out".')
         sys.exit(0)
 
