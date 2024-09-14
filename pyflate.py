@@ -17,13 +17,14 @@
 import typing as T
 
 class BitfieldBase:
-    def __init__(self, x: T.Union[bytes, 'BitfieldBase']) -> None:
+    def __init__(self, x: T.Union[T.BinaryIO, 'BitfieldBase']) -> None:
         if isinstance(x,BitfieldBase):
-            self.f = x.f
-            self.bits = x.bits
-            self.bitfield = x.bitfield
-            self.count = x.bitfield
+            self.f: T.BinaryIO = x.f
+            self.bits: int = x.bits
+            self.bitfield: int = x.bitfield
+            self.count: int = x.bitfield
         else:
+            print("BitfieldBase.__init__", x)
             self.f = x
             self.bits = 0
             self.bitfield = 0x0
@@ -58,6 +59,13 @@ class BitfieldBase:
     def tellbits(self) -> int:
         bytes, bits = self.tell()
         return (bytes << 3) + bits
+    def readbits(self, n: int = 8) -> int:
+        raise NotImplementedError()
+    def snoopbits(self, n: int = 8) -> int:
+        raise NotImplementedError()
+    def _more(self) -> None:
+        raise NotImplementedError()
+
 
 class Bitfield(BitfieldBase):
     def _more(self) -> None:
@@ -105,25 +113,21 @@ def printbits(v: int, n: int) -> str:
     return o
 
 class HuffmanLength:
-    def __init__(self, code, bits = 0):
+    def __init__(self, code: int, bits: int = 0):
         self.code = code
         self.bits = bits
         self.symbol = None
+        self.reverse_symbol = None
     def __repr__(self) -> str:
         return repr((self.code, self.bits, self.symbol, self.reverse_symbol))
-    def __cmp__(self, other: HuffmanLength) -> int:
-        if self.bits == other.bits:
-            return cmp(self.code, other.code)
-        else:
-            return cmp(self.bits, other.bits)
 
-    def __lt__(self, other: HuffmanLength) -> bool:
+    def __lt__(self, other: 'HuffmanLength') -> bool:
         if self.bits == other.bits:
             return self.code < other.code
         else:
             return self.bits < other.bits
 
-    def __gt__(self, other: HuffmanLength) -> bool:
+    def __gt__(self, other: 'HuffmanLength') -> bool:
         if self.bits == other.bits:
             return self.code > other.code
         else:
@@ -153,7 +157,7 @@ def reverse_bytes(v: int, n: int) -> int:
     return z
 
 class HuffmanTable:
-    def __init__(self, bootstrap):
+    def __init__(self, bootstrap: T.List[T.Tuple[int, int]]):
         l = []
         start, bits = bootstrap[0]
         for finish, endbits in bootstrap[1:]:
@@ -178,7 +182,7 @@ class HuffmanTable:
             #print printbits(x.symbol, bits), printbits(x.reverse_symbol, bits)
 
     def tables_by_bits(self) -> None:
-        d = {}
+        d: T.Dict[int, T.List[HuffmanLength]] = {}
         for x in self.table:
             try:
                 d[x.bits].append(x)
@@ -192,14 +196,15 @@ class HuffmanTable:
             if x.bits < self.min_bits: self.min_bits = x.bits
             if x.bits > self.max_bits: self.max_bits = x.bits
 
-    def _find_symbol(self, bits, symbol, table):
+    def _find_symbol(self, bits: int, symbol: int, table: T.List[HuffmanLength]) -> int:
         for h in table:
             if h.bits == bits and h.reverse_symbol == symbol:
                 #print "found, processing", h.code
                 return h.code
         return -1
 
-    def find_next_symbol(self, field, reversed = True):
+    #def find_next_symbol(self, field, reversed = True):
+    def find_next_symbol(self, field: Bitfield, reversed: bool = True) -> int:
         cached_length = -1
         cached = None
         for x in self.table:
@@ -222,7 +227,7 @@ class HuffmanTable:
                 raise Exception("unfound symbol, even after max_bits")
 
 class OrderedHuffmanTable(HuffmanTable):
-    def __init__(self, lengths):
+    def __init__(self, lengths: T.List[int]):
         l = len(lengths)
         z = map(None, list(range(l)), lengths) + [(l, -1)]
         print("lengths to spans:", z)
@@ -253,7 +258,7 @@ def extra_length_bits(n :int) -> int:
     else:
         raise Exception("illegal length code")
 
-def move_to_front(l, c):
+def move_to_front(l: T.List[int], c: int) -> None:
     l[:] = l[c:c+1] + l[0:c] + l[c+1:]
 
 def bwt_transform(L):
@@ -297,7 +302,7 @@ def bwt_reverse(L, end):
     return out
 
 # Sixteen bits of magic have been removed by the time we start decoding
-def gzip_main(field: RBitfield):
+def gzip_main(field: RBitfield) -> bytes:
     b = Bitfield(field)
     method = b.readbits(8)
     if method != 8:
@@ -326,7 +331,7 @@ def gzip_main(field: RBitfield):
         b.readbits(16)
 
     print("gzip header skip", b.tell())
-    out = ''
+    out = b''
 
     #print 'header 0 count 0 bits', b.tellbits()
 
@@ -349,7 +354,7 @@ def gzip_main(field: RBitfield):
             #print 'raw data at', b.tell(), 'bits', b.tellbits() - bheader_start
             #print 'header 0 count 0 bits', b.tellbits() - bheader_start
             for i in range(length):
-                out += chr(b.readbits(8))
+                out += bytes([b.readbits(8)])
             #print 'linear', b.tell()[0], 'count', length, 'bits', b.tellbits() - bheader_start
 
         elif blocktype == 1 or blocktype == 2: # Huffman
@@ -434,8 +439,8 @@ def gzip_main(field: RBitfield):
                     if literal_count == 0:
                         literal_start = lz_start
                     literal_count += 1
-                    print('found literal', repr(chr(r)))
-                    out += chr(r)
+                    print('found literal', repr((r)))
+                    out += bytes([r])
                 elif r == 256:
                     if literal_count > 0:
                         #print 'add 0 count', literal_count, 'bits', lz_start-literal_start, 'data', `out[-literal_count:]`
@@ -492,7 +497,7 @@ def gzip_main(field: RBitfield):
 
 import sys
 
-def _main():
+def _main() -> None:
     filename = sys.argv[1]
     input = open(filename, 'rb')
     field = RBitfield(input)
@@ -503,8 +508,9 @@ def _main():
     else:
         raise Exception("Unknown file magic "+hex(magic)+", not a gzip file")
 
-    f = open('/dev/stdout', 'w')
-    f.write(out)
+    #f = open('/dev/stdout', 'w')
+    f = sys.stdout
+    f.write(out.decode())
     f.close()
     input.close()
         
