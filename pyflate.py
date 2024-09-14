@@ -111,24 +111,24 @@ class HuffmanLength:
         self.symbol = None
     def __repr__(self) -> str:
         return repr((self.code, self.bits, self.symbol, self.reverse_symbol))
-    def __cmp__(self, other) -> int:
+    def __cmp__(self, other: HuffmanLength) -> int:
         if self.bits == other.bits:
             return cmp(self.code, other.code)
         else:
             return cmp(self.bits, other.bits)
-        # >
-    def __lt__(self, other):
+
+    def __lt__(self, other: HuffmanLength) -> bool:
         if self.bits == other.bits:
             return self.code < other.code
         else:
             return self.bits < other.bits
-        # <
-    def __gt__(self, other):
+
+    def __gt__(self, other: HuffmanLength) -> bool:
         if self.bits == other.bits:
             return self.code > other.code
         else:
             return self.bits > other.bits
-        # ==
+
 
 def reverse_bits(v: int, n: int) -> int:
     a = 1 << 0
@@ -141,7 +141,7 @@ def reverse_bits(v: int, n: int) -> int:
         b >>= 1
     return z
 
-def reverse_bytes(v, n):
+def reverse_bytes(v: int, n: int) -> int:
     a = 0xff << 0
     b = 0xff << (n - 8)
     z = 0
@@ -166,7 +166,7 @@ class HuffmanTable:
         l.sort()
         self.table = l
 
-    def populate_huffman_symbols(self):
+    def populate_huffman_symbols(self) -> None:
         bits, symbol = -1, -1
         for x in self.table:
             symbol += 1
@@ -177,7 +177,7 @@ class HuffmanTable:
             x.reverse_symbol = reverse_bits(symbol, bits)
             #print printbits(x.symbol, bits), printbits(x.reverse_symbol, bits)
 
-    def tables_by_bits(self):
+    def tables_by_bits(self) -> None:
         d = {}
         for x in self.table:
             try:
@@ -186,7 +186,7 @@ class HuffmanTable:
                 d[x.bits] = [x]
         pass
 
-    def min_max_bits(self):
+    def min_max_bits(self) -> None:
         self.min_bits, self.max_bits = 16, -1
         for x in self.table:
             if x.bits < self.min_bits: self.min_bits = x.bits
@@ -228,16 +228,16 @@ class OrderedHuffmanTable(HuffmanTable):
         print("lengths to spans:", z)
         HuffmanTable.__init__(self, z)
 
-def code_length_orders(i):
+def code_length_orders(i: int) -> int:
     return (16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15)[i]
 
-def distance_base(i):
+def distance_base(i: int) -> int:
     return (1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577)[i]
 
-def length_base(i):
+def length_base(i: int) -> int:
     return (3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258)[i-257]
 
-def extra_distance_bits(n):
+def extra_distance_bits(n :int) -> int:
     if 0 <= n <= 1:
         return 0
     elif 2 <= n <= 29:
@@ -245,7 +245,7 @@ def extra_distance_bits(n):
     else:
         raise Exception("illegal distance code")
 
-def extra_length_bits(n):
+def extra_length_bits(n :int) -> int:
     if 257 <= n <= 260 or n == 285:
         return 0
     elif 261 <= n <= 284:
