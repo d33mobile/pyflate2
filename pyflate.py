@@ -44,16 +44,6 @@ class BitfieldBase:
         return self.bits & 0x7
     def align(self) -> None:
         self.readbits(self.toskip())
-    def dropbits(self, n: int = 8) -> None:
-        while n >= self.bits and n > 7:
-            n -= self.bits
-            self.bits = 0
-            n -= len(self.f._read(n >> 3)) << 3
-        if n:
-            self.readbits(n)
-        # No return value
-    def dropbytes(self, n: int = 1) -> None:
-        self.dropbits(n << 3)
     def tell(self) -> T.Tuple[int, int]:
         return self.count - ((self.bits+7) >> 3), 7 - ((self.bits-1) & 0x7)
     def tellbits(self) -> int:
@@ -323,8 +313,7 @@ def gzip_main(field: RBitfield) -> bytes:
     print('os_type', hex(os_type))
 
     if flags & 0x04: # structured GZ_FEXTRA miscellaneous data
-        xlen = b.readbits(16)
-        b.dropbytes(xlen)
+        raise Exception("GZ_FEXTRA not supported")
     while flags & 0x08: # original GZ_FNAME filename
         if not b.readbits(8):
             break
