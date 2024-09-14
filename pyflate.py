@@ -116,8 +116,8 @@ class HuffmanLength:
     def __init__(self, code: int, bits: int = 0):
         self.code = code
         self.bits = bits
-        self.symbol = None
-        self.reverse_symbol = None
+        self.symbol: T.Optional[int] = None
+        self.reverse_symbol: T.Optional[int] = None
     def __repr__(self) -> str:
         return repr((self.code, self.bits, self.symbol, self.reverse_symbol))
 
@@ -229,7 +229,8 @@ class HuffmanTable:
 class OrderedHuffmanTable(HuffmanTable):
     def __init__(self, lengths: T.List[int]):
         l = len(lengths)
-        z = map(None, list(range(l)), lengths) + [(l, -1)]
+        #z = list(map(None, list(range(l)), lengths)) + [(l, -1)]
+        z = list(zip(list(range(l)), lengths)) + [(l, -1)]
         print("lengths to spans:", z)
         HuffmanTable.__init__(self, z)
 
@@ -261,13 +262,14 @@ def extra_length_bits(n :int) -> int:
 def move_to_front(l: T.List[int], c: int) -> None:
     l[:] = l[c:c+1] + l[0:c] + l[c+1:]
 
-def bwt_transform(L):
+def bwt_transform(L: bytes) -> T.List[int]:
     # Semi-inefficient way to get the character counts
-    F = ''.join(sorted(L))
+    F = b''.join(sorted(L))
     base = list(map(F.find,list(map(chr,list(range(256))))))
 
     pointers = [-1] * len(L)
-    for symbol, i in map(None, list(map(ord,L)), range(len(L))):
+    #for symbol, i in map(None, list(map(ord,L)), range(len(L))):
+    for symbol, i in zip(map(ord,L), range(len(L))):
         pointers[base[symbol]] = i
         base[symbol] += 1
     return pointers
