@@ -51,7 +51,7 @@ def bwt_reverse(L: bytes, end: int) -> bytes:
         # out where the off-by-one-ism is yet---that actually produced
         # the cyclic loop.
 
-        for i in range(len(L)):
+        for _ in range(len(L)):
             end = T[end]
             out += bytes([L[end]])
 

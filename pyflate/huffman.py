@@ -16,7 +16,7 @@
 
 import typing as T
 import logging
-from pyflate.bit import Bitfield, RBitfield
+from pyflate.bit import Bitfield
 
 
 # basically log(*args), but debug
@@ -101,7 +101,7 @@ class HuffmanTable:
         for x in self.table:
             try:
                 d[x.bits].append(x)
-            except:
+            except Exception:
                 d[x.bits] = [x]
         pass
 

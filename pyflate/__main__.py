@@ -8,7 +8,7 @@
 import logging
 import sys
 
-from pyflate import RBitfield
+from pyflate.bit import RBitfield
 from pyflate import gzip_main
 
 
