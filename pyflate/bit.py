@@ -209,9 +209,8 @@ class TestBitfield(unittest.TestCase):
         self.assertEqual(b.snoopbits(2), 0b10)
         self.assertEqual(b.readbits(2), 0b10)
         # trigger the needbit
-        # todo: readability
-        self.assertEqual(b.snoopbits(8), 129)
-        self.assertEqual(b.readbits(8), 129)
+        self.assertEqual(b.snoopbits(8), 0b10000001)
+        self.assertEqual(b.readbits(8), 0b10000001)
 
     def test_snoop_r(self) -> None:
         """
@@ -223,13 +222,11 @@ class TestBitfield(unittest.TestCase):
         self.assertEqual(b.snoopbits(2), 0b10)
         self.assertEqual(b.readbits(2), 0b10)
         # trigger the needbit for snoop
-        # todo: readability
-        self.assertEqual(b.snoopbits(8), 218)
-        self.assertEqual(b.readbits(8), 218)
+        self.assertEqual(b.snoopbits(8), 0b11011010)
+        self.assertEqual(b.readbits(8), 0b11011010)
         # trigger the needbit for read
-        # todo: readability
-        self.assertEqual(b.readbits(8), 218)
-        self.assertEqual(b.snoopbits(8), 218)
+        self.assertEqual(b.readbits(8), 0b11011010)
+        self.assertEqual(b.snoopbits(8), 0b11011010)
 
     def test_construct(self) -> None:
         """
