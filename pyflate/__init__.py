@@ -627,39 +627,3 @@ def gzip_main(field: RBitfield) -> bytes:
     # print 'header 0 count 0 bits', b.tellbits()-bfooter_start
 
     return out
-
-
-import sys
-
-
-def _main() -> None:
-    # set to debug, add timestamp in square brackets
-    fmt = "%(asctime)s %(levelname)s: %(message)s"
-    logging.basicConfig(level=logging.DEBUG, format=fmt)
-    filename = sys.argv[1]
-    input = open(filename, "rb")
-    field = RBitfield(input)
-
-    magic = field.readbits(16)
-    if magic == 0x1F8B:  # GZip
-        out = gzip_main(field)
-    else:
-        raise Exception("Unknown file magic " + hex(magic) + ", not a gzip file")
-
-    # f = open('/dev/stdout', 'w')
-    f = sys.stdout
-    f.write(out.decode())
-    f.close()
-    input.close()
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        program = sys.argv[0]
-        print(program + ":", "usage:", program, "<filename.gz>")
-        print(
-            '\tThe contents will be decoded and decompressed plaintext written to "./out".'
-        )
-        sys.exit(1)
-
-    _main()
