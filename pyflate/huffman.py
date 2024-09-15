@@ -103,7 +103,6 @@ class HuffmanTable:
                 d[x.bits].append(x)
             except Exception:
                 d[x.bits] = [x]
-        pass
 
     def min_max_bits(self) -> None:
         self.min_bits, self.max_bits = 16, -1
@@ -120,16 +119,15 @@ class HuffmanTable:
                 return h.code
         return -1
 
-    # def find_next_symbol(self, field, reversed = True):
-    def find_next_symbol(self, field: Bitfield, reversed: bool = True) -> int:
+    def find_next_symbol(self, field: Bitfield, rev: bool = True) -> int:
         cached_length = -1
         cached = None
         for x in self.table:
             if cached_length != x.bits:
                 cached = field.snoopbits(x.bits)
                 cached_length = x.bits
-            if (reversed and x.reverse_symbol == cached) or (
-                not reversed and x.symbol == cached
+            if (rev and x.reverse_symbol == cached) or (
+                not rev and x.symbol == cached
             ):
                 field.readbits(x.bits)
                 log(
@@ -144,16 +142,6 @@ class HuffmanTable:
         raise Exception(
             "unfound symbol, even after end of table @ " + repr(field.tell())
         )
-
-        for bits in range(self.min_bits, self.max_bits + 1):
-            # print printbits(field.snoopbits(bits),bits)
-            r = self._find_symbol(bits, field.snoopbits(bits), self.table)
-            if 0 <= r:
-                field.readbits(bits)
-                return r
-            elif bits == self.max_bits:
-                raise Exception("unfound symbol, even after max_bits")
-
 
 class OrderedHuffmanTable(HuffmanTable):
     def __init__(self, lengths: T.List[int]):
