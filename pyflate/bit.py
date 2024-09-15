@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+
+"""
+Bitfield reader classes. These classes are used to read a stream of bity
+data, one or multiple bits at a time. Data is read from a file-like object.
+Bit-based snooping is and telling the current position is also supported.
+
+The Bitfield class reads the bits in the order.
+The RBitfield class reads the bits in reverse order.
+
+There are also convenience functions for gzip format, such as align().
+"""
+
 # Copyright 2006--2007-01-21 Paul Sladen
 # http://www.paul.sladen.org/projects/compression/
 #
@@ -9,17 +21,25 @@ import typing as T
 import logging
 
 
-# basically log(*args), but debug
 def log(*args: T.Any) -> None:
+    """Log the arguments at the debug level."""
     logging.debug(" ".join(map(str, args)))
 
 
 class LengthError(Exception):
-    pass
+    """Exception raised when the end of the stream is reached."""
+
 
 
 class BitfieldBase:
+    """
+    Base class for bitfield readers. This class is not meant to be used
+    directly, but to be subclassed by Bitfield and RBitfield.
+    """
+
     def __init__(self, x: T.Union[T.BinaryIO, "BitfieldBase"]) -> None:
+        """Initialize the BitfieldBase object, either from a file-like
+        object or another BitfieldBase object."""
         if isinstance(x, BitfieldBase):
             self.f: T.BinaryIO = x.f
             self.bits: int = x.bits
@@ -33,59 +53,86 @@ class BitfieldBase:
             self.count = 0
 
     def _read(self, n: int) -> bytes:
+        """Read n bytes from the file-like object."""
         s = self.f.read(n)
-        log("BitfieldBase._read(%d) -> %r" % (n, s))
         if not s:
             raise LengthError()
         self.count += len(s)
         return s
 
-    def needbits(self, n: int) -> None:
-        log("BitfieldBase.needbits(%d)" % n)
+    def _needbits(self, n: int) -> None:
+        """Triggered when the number of bits needed is greater than the
+        number of bits available. This function reads more data from the
+        file-like object."""
         while self.bits < n:
             self._more()
 
     @staticmethod
     def _mask(n: int) -> int:
+        """Return a mask of n bits."""
         return (1 << n) - 1
 
     def toskip(self) -> int:
+        """Return the number of bits to skip to align the bitfield."""
         return self.bits & 0b111
 
     def align(self) -> None:
+        """Align the bitfield to the next byte boundary. (?)"""
         self.readbits(self.toskip())
 
     def tell(self) -> T.Tuple[int, int]:
-        return self.count - ((self.bits + 7) >> 3), 7 - ((self.bits - 1) & 0b111)
+        """Return the current position in the file-like object.
+
+        The return value is a tuple of two integers. The first integer
+        is the number of bytes read from the file-like object, and the
+        second integer is the number of bits read from the file-like
+        object.
+        """
+        return self.count - ((self.bits + 7) >> 3), 7 - (
+            (self.bits - 1) & 0b111
+        )
 
     def tellbits(self) -> int:
-        bytes, bits = self.tell()
-        return (bytes << 3) + bits
+        """Return the current position in the file-like object in bits."""
+        nbytes, nbits = self.tell()
+        return (nbytes << 3) + nbits
 
     def readbits(self, n: int = 8) -> int:  # pragma: no cover
+        """Read n bits from the file-like object."""
         raise NotImplementedError()
 
-    def snoopbits(self, n: int = 8) -> int:   # pragma: no cover
+    def snoopbits(self, n: int = 8) -> int:  # pragma: no cover
+        """Read n bits from the file-like object without moving the
+        current position."""
         raise NotImplementedError()
 
     def _more(self) -> None:  # pragma: no cover
+        """Read more data from the file-like object."""
         raise NotImplementedError()
 
 
 class Bitfield(BitfieldBase):
+    """
+    Bitfield reader class. This class reads the bits in the order.
+    """
+
     def _more(self) -> None:
+        """Read more data from the file-like object."""
         c = self._read(1)
         self.bitfield += ord(c) << self.bits
         self.bits += 8
 
     def snoopbits(self, n: int = 8) -> int:
+        """Read n bits from the file-like object without moving the
+        current position."""
         if n > self.bits:
-            self.needbits(n)
+            self._needbits(n)
         return self.bitfield & self._mask(n)
 
     def readbits(self, n: int = 8) -> int:
+        """Read n bits from the file-like object."""
         if n > self.bits:
-            self.needbits(n)
+            self._needbits(n)
         r = self.bitfield & self._mask(n)
         self.bits -= n
         self.bitfield >>= n
@@ -93,21 +140,27 @@ class Bitfield(BitfieldBase):
 
 
 class RBitfield(BitfieldBase):
+    """
+    Bitfield reader class. This class reads the bits in reverse order.
+    """
     def _more(self) -> None:
+        """Read more data from the file-like object."""
         c = self._read(1)
         self.bitfield <<= 8
         self.bitfield += ord(c)
         self.bits += 8
 
     def snoopbits(self, n: int = 8) -> int:
+        """Read n bits from the file-like object without moving the
+        current position."""
         if n > self.bits:
-            log("RBitfield.snoopbits(%d) needbits(%d)" % (n, n))
-            self.needbits(n)
+            self._needbits(n)
         return (self.bitfield >> (self.bits - n)) & self._mask(n)
 
     def readbits(self, n: int = 8) -> int:
+        """Read n bits from the file-like object."""
         if n > self.bits:
-            self.needbits(n)
+            self._needbits(n)
         r = (self.bitfield >> (self.bits - n)) & self._mask(n)
         self.bits -= n
         self.bitfield &= ~(self._mask(n) << self.bits)
@@ -119,10 +172,24 @@ import io
 
 
 class TestBitfield(unittest.TestCase):
-    def test_bitfield(self) -> None:
+    """
+    Test cases for the Bitfield and RBitfield classes.
+    """
+
+    def test_bitfieldu_read(self) -> None:
+        """
+        Test reading bits from a Bitfield object.
+
+        The test case reads the bits from a Bitfield object and checks
+        if the bits are read correctly. We also check if the current
+        position is updated correctly. The test case also checks if the
+        LengthError exception is raised when the end of the stream is
+        reached.
+        """
         b = Bitfield(io.BytesIO(b"\x01"))
         self.assertEqual(b.readbits(1), 1)
         self.assertEqual(b.tell(), (0, 1))
+        # surprisingly, no exception is raised yet
         self.assertEqual(b.readbits(1), 0)
         self.assertEqual(b.tell(), (0, 2))
         try:
@@ -130,18 +197,26 @@ class TestBitfield(unittest.TestCase):
             self.fail("expected exception")  # pragma: no cover
         except LengthError:
             pass
+
     def test_snoop(self) -> None:
+        """
+        Test snooping bits from a Bitfield object.
+        """
         digit = 0b0110
         b = Bitfield(io.BytesIO(bytes([digit, digit])))
         self.assertEqual(b.snoopbits(2), 0b10)
-        # once again, no needbits now
+        # once again, no _needbits now
         self.assertEqual(b.snoopbits(2), 0b10)
         self.assertEqual(b.readbits(2), 0b10)
         # trigger the needbit
         # todo: readability
         self.assertEqual(b.snoopbits(8), 129)
         self.assertEqual(b.readbits(8), 129)
+
     def test_snoop_r(self) -> None:
+        """
+        Test snooping bits from a RBitfield object.
+        """
         digit = 0b10110110
         b = RBitfield(io.BytesIO(bytes([digit] * 4)))
         self.assertEqual(b.snoopbits(2), 0b10)
@@ -155,17 +230,29 @@ class TestBitfield(unittest.TestCase):
         # todo: readability
         self.assertEqual(b.readbits(8), 218)
         self.assertEqual(b.snoopbits(8), 218)
+
     def test_construct(self) -> None:
+        """
+        Test constructing a Bitfield object from another Bitfield object.
+        """
         b = Bitfield(io.BytesIO(b"\x01"))
         b2 = Bitfield(b)
         self.assertEqual(b2.readbits(1), 1)
+
     def test_to_skip(self) -> None:
-        b = Bitfield(io.BytesIO(bytes([0b10101])))
-        self.assertEqual(b.bits, 0)
+        """
+        Test the toskip() method of the Bitfield object.
+        """
+        b = Bitfield(io.BytesIO(bytes([0b10101, 0b1])))
+        self.assertEqual(b.bitfield, 0)
         self.assertEqual(b.toskip(), 0)
         b.readbits(1)
         self.assertEqual(b.toskip(), 0b111)
+
     def test_align(self) -> None:
+        """
+        Test the align() method of the Bitfield object.
+        """
         b = Bitfield(io.BytesIO(bytes([2, 1, 3, 7])))
         self.assertEqual(b.tellbits(), 0)
         b.readbits(1)
