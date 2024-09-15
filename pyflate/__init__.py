@@ -116,10 +116,6 @@ def extra_length_bits(n: int) -> int:
         raise Exception("illegal length code")
 
 
-def move_to_front(l: T.List[int], c: int) -> None:
-    l[:] = l[c : c + 1] + l[0:c] + l[c + 1 :]
-
-
 def bwt_transform(L: bytes) -> T.List[int]:
     # Semi-inefficient way to get the character counts
     F = bytes(sorted(L))
