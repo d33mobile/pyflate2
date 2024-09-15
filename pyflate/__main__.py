@@ -5,6 +5,7 @@
 # You may use and distribute this code under any DFSG-compatible
 # license (eg. BSD, GNU GPLv2).
 
+import logging
 import sys
 
 from pyflate import RBitfield
