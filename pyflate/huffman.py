@@ -8,11 +8,6 @@
 # Stand-alone pure-Python DEFLATE (gzip) decoder/decompressor.
 # This is probably most useful for research purposes/index building;  there
 # is certainly some room for improvement in the Huffman bit-matcher.
-#
-# With the as-written implementation, there was a known bug in BWT
-# decoding to do with repeated strings.  This has been worked around;
-# see 'bwt_reverse()'.  Correct output is produced in all test cases
-# but ideally the problem would be found...
 
 import typing as T
 import logging
