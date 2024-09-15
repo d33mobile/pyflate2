@@ -301,7 +301,7 @@ def gzip_main(field: RBitfield) -> bytes:
                             out += out[-distance:]
                         else:
                             out += out[-distance : length - distance]
-                        log("dictionary lookup: length", cached_length, end=" ")
+                        log("dictionary lookup: length", cached_length)
                         log(
                             "copy",
                             -distance,
