@@ -125,7 +125,6 @@ def load_dynamic_huffman(b: Bitfield) -> T.Tuple[HuffmanTable, HuffmanTable]:
 
     dynamic_codes = OrderedHuffmanTable(l)
     dynamic_codes.populate_huffman_symbols()
-    dynamic_codes.min_max_bits()
 
     # Decode the code_lengths for both tables at once,
     # then split the list later
@@ -221,8 +220,6 @@ def load_huffman_tables(b: Bitfield, blocktype: int) -> T.Tuple[HuffmanTable, Hu
     main_literals.populate_huffman_symbols()
     main_distances.populate_huffman_symbols()
 
-    main_literals.min_max_bits()
-    main_distances.min_max_bits()
     # log(f'{main_literals=}\n{main_distances=}')
     return main_literals, main_distances
 

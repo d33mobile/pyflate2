@@ -97,14 +97,6 @@ class HuffmanTable:
             except Exception:
                 d[x.bits] = [x]
 
-    def min_max_bits(self) -> None:
-        self.min_bits, self.max_bits = 16, -1
-        for x in self.table:
-            if x.bits < self.min_bits:
-                self.min_bits = x.bits
-            if x.bits > self.max_bits:
-                self.max_bits = x.bits
-
     def find_next_symbol(self, field: Bitfield, rev: bool = True) -> int:
         cached_length = -1
         cached = None
