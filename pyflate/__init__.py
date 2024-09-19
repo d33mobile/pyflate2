@@ -199,7 +199,38 @@ def read_gzip_header(b: Bitfield) -> None:
         b.readbits(16)
 
 
-# Sixteen bits of magic have been removed by the time we start decoding
+def load_huffman_tables(b: Bitfield, blocktype: int) -> T.Tuple[HuffmanTable, HuffmanTable]:
+    if blocktype == 1:  # Static Huffman
+        log("loading static huffman block")
+        static_huffman_bootstrap = [
+            (0, 8),
+            (144, 9),
+            (256, 7),
+            (280, 8),
+            (288, -1),
+        ]
+        static_huffman_lengths_bootstrap = [(0, 5), (32, -1)]
+        main_literals = HuffmanTable(static_huffman_bootstrap)
+        main_distances = HuffmanTable(static_huffman_lengths_bootstrap)
+
+    elif blocktype == 2:  # Dynamic Huffman
+        log("loading dynamic huffman block")
+        main_literals, main_distances = load_dynamic_huffman(b)
+    else:
+        raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
+    log('done loading huffman tables')
+
+    # Common path for both Static and Dynamic Huffman decode now
+
+    main_literals.populate_huffman_symbols()
+    main_distances.populate_huffman_symbols()
+
+    main_literals.min_max_bits()
+    main_distances.min_max_bits()
+    # log(f'{main_literals=}\n{main_distances=}')
+    return main_literals, main_distances
+
+
 def gzip_main(f: T.BinaryIO) -> bytes:
 
     b = Bitfield(f)
@@ -208,22 +239,11 @@ def gzip_main(f: T.BinaryIO) -> bytes:
     log("gzip header skip", b.tell())
     out = b""
 
-    # print 'header 0 count 0 bits', b.tellbits()
-
+    # iterate over all blocks
     while True:
-        header_start = b.tell()
-        bheader_start = b.tellbits()
-        log("new block at", b.tell())
+        log('block start', b.tell())
         lastbit = b.readbits(1)
-        log("last bit", hex(lastbit))
         blocktype = b.readbits(2)
-        log(
-            "deflate-blocktype",
-            blocktype,
-            ["stored", "static huff", "dyna huff"][blocktype],
-            "beginning at",
-            header_start,
-        )
 
         log("raw block data at", b.tell())
 
@@ -235,68 +255,32 @@ def gzip_main(f: T.BinaryIO) -> bytes:
             length = b.readbits(16)
             if length & b.readbits(16):
                 raise Exception("stored block lengths do not match each other")
-            # print "stored block of length", length
-            # print 'raw data at', b.tell(), 'bits', b.tellbits() - bheader_start
-            # print 'header 0 count 0 bits', b.tellbits() - bheader_start
             for i in range(length):
                 out += bytes([b.readbits(8)])
-            # print 'linear', b.tell()[0], 'count', length, 'bits', b.tellbits() - bheader_start
             continue
 
-        main_literals, main_distances = None, None
+        main_literals, main_distances = load_huffman_tables(b, blocktype)
 
-        if blocktype == 1:  # Static Huffman
-            log("loading static huffman block")
-            static_huffman_bootstrap = [
-                (0, 8),
-                (144, 9),
-                (256, 7),
-                (280, 8),
-                (288, -1),
-            ]
-            static_huffman_lengths_bootstrap = [(0, 5), (32, -1)]
-            main_literals = HuffmanTable(static_huffman_bootstrap)
-            main_distances = HuffmanTable(static_huffman_lengths_bootstrap)
-
-        elif blocktype == 2:  # Dynamic Huffman
-            log("loading dynamic huffman block")
-            main_literals, main_distances = load_dynamic_huffman(b)
-        else:
-            raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
-        log('done loading huffman tables')
-
-        # Common path for both Static and Dynamic Huffman decode now
-
-        data_start = b.tell()
-        log("raw data at", data_start, "bits", b.tellbits() - bheader_start)
-        # print 'header 0 count 0 bits', b.tellbits() - bheader_start
-
-        main_literals.populate_huffman_symbols()
-        main_distances.populate_huffman_symbols()
-
-        main_literals.min_max_bits()
-        main_distances.min_max_bits()
-        # log(f'{main_literals=}, {main_distances=}')
-
-        literal_count = 0
+        literal_count = 0  # used to calculate literal_start
         literal_start = 0
 
+        log('reading literals: ', b.tell())
         while True:
             lz_start = b.tellbits()
             r = main_literals.find_next_symbol(b)
-            if 0 <= r <= 255:
-                if literal_count == 0:
-                    literal_start = lz_start
-                literal_count += 1
-                log("found literal", repr((r)))
-                out += bytes([r])
-            elif r == 256:
+            if r == 256:
                 if literal_count > 0:
                     # print 'add 0 count', literal_count, 'bits', lz_start-literal_start, 'data', `out[-literal_count:]`
                     literal_count = 0
                 log("eos 0 count 0 bits", b.tellbits() - lz_start)
                 log("end of Huffman block encountered")
                 break
+            if 0 <= r <= 255:
+                if literal_count == 0:
+                    literal_start = lz_start
+                literal_count += 1
+                log("found literal", repr((r)))
+                out += bytes([r])
             elif 257 <= r <= 285:  # dictionary lookup
                 if literal_count > 0:
                     # print 'add 0 count', literal_count, 'bits', lz_start-literal_start, 'data', `out[-literal_count:]`
@@ -328,7 +312,7 @@ def gzip_main(f: T.BinaryIO) -> bytes:
                         "data",
                         repr(out[-cached_length:]),
                     )
-                elif 30 <= r1 <= 31:
+                if 30 <= r1 <= 31:
                     raise Exception(
                         "illegal unused distance symbol in use @" + repr(b.tell())
                     )

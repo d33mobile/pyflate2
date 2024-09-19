@@ -11,6 +11,8 @@
 
 import typing as T
 import logging
+from pprint import pformat
+
 from pyflate.bit import Bitfield
 
 
@@ -27,7 +29,10 @@ class HuffmanLength:
         self.reverse_symbol: T.Optional[int] = None
 
     def __repr__(self) -> str:
-        return repr((self.code, self.bits, self.symbol, self.reverse_symbol))
+        return (
+            f'HL(code={self.code}, bits={self.bits}, '
+            f'symbol={self.symbol}, reverse_symbol={self.reverse_symbol})'
+        )
 
     def __lt__(self, other: "HuffmanLength") -> bool:
         if self.bits == other.bits:
@@ -139,7 +144,7 @@ class HuffmanTable:
         )
 
     def __repr__(self) -> str:
-        return f'HuffmanTable({self.table=})'
+        return f'HuffmanTable(self.table=\n{pformat(self.table)}'
 
 class OrderedHuffmanTable(HuffmanTable):
     def __init__(self, lengths: T.List[int]):
