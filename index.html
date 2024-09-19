@@ -10,7 +10,6 @@
 <script type="text/python">
 
 import io
-import base64
 import gzip
 
 import pyflate
@@ -24,11 +23,8 @@ def log(*args) -> None:
 
 pyflate.log = log
 
-#inp = io.BytesIO(base64.b16decode('1F8B08000000000000034B2C2F4EE502003091703A05000000'))
 inp = io.BytesIO(gzip.compress(b'Hello, world!'))
-field = pyflate.bit.Bitfield(inp)
-magic = field.readbits(16)
-out = pyflate.gzip_main(field)
+out = pyflate.gzip_main(inp)
 
 document <= 'Decompressed data: ' + out.decode('utf-8')
 </script>

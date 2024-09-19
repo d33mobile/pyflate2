@@ -17,20 +17,12 @@ def _main() -> None:
     fmt = "%(asctime)s %(levelname)s: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format=fmt)
     filename = sys.argv[1]
-    input = open(filename, "rb")
-    field = Bitfield(input)
-
-    magic = field.readbits(16)
-    if magic == 0x8b1f:  # GZip
-        out = gzip_main(field)
-    else:
-        raise Exception("Unknown file magic " + hex(magic) + ", not a gzip file")
+    inp = open(filename, "rb")
+    out = gzip_main(inp)
 
     # f = open('/dev/stdout', 'w')
     f = sys.stdout
     f.write(out.decode())
-    f.close()
-    input.close()
 
 
 if __name__ == "__main__":

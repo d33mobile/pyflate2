@@ -112,7 +112,15 @@ def extra_length_bits(n: int) -> int:
 
 
 # Sixteen bits of magic have been removed by the time we start decoding
-def gzip_main(b: Bitfield) -> bytes:
+def gzip_main(f: T.BinaryIO) -> bytes:
+
+    b = Bitfield(f)
+    magic = b.readbits(16)
+    if magic != 0x8b1f:  # GZip
+        raise Exception(
+            "Unknown file magic " + hex(magic) + ", not a gzip file"
+        )
+
     method = b.readbits(8)
     if method != 8:
         raise Exception("Unknown (not type eight DEFLATE) compression method")
