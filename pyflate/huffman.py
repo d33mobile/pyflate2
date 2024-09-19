@@ -10,15 +10,10 @@
 # is certainly some room for improvement in the Huffman bit-matcher.
 
 import typing as T
-import logging
 from pprint import pformat
 
 from pyflate.bit import Bitfield
-
-
-# basically log(*args), but debug
-def log(*args: T.Any) -> None:
-    logging.debug(" ".join(map(str, args)))
+from pyflate.log import log
 
 
 class HuffmanLength:

@@ -17,12 +17,7 @@ There are also convenience functions for gzip format, such as align().
 # license (eg. BSD, GNU GPLv2).
 
 import typing as T
-import logging
-
-
-def log(*args: T.Any) -> None:
-    """Log the arguments at the debug level."""
-    logging.debug(" ".join(map(str, args)))
+from pyflate.log import log
 
 
 class LengthError(Exception):

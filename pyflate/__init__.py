@@ -13,11 +13,7 @@ import typing as T
 import logging
 from pyflate.bit import Bitfield
 from pyflate.huffman import HuffmanTable, OrderedHuffmanTable
-
-
-# basically log(*args), but debug
-def log(*args: T.Any) -> None:
-    logging.debug(" ".join(map(str, args)))
+from pyflate.log import log
 
 
 def code_length_orders(i: int) -> int:
