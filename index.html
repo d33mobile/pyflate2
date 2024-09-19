@@ -1,0 +1,35 @@
+<html><head>
+    <meta charset="utf-8">
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython.min.js">
+    </script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython_stdlib.js">
+    </script>
+</head><body onload="brython({debug: 1, cache: true})">
+<script type="text/python">
+
+import io
+import base64
+import gzip
+
+import pyflate
+from browser import document
+
+def log(*args) -> None:
+    """Log the arguments at the debug level."""
+    s = (" ".join(map(str, args)))
+    # escape HTML entities
+    document['output'] <= f"{s}\n"
+
+pyflate.log = log
+
+#inp = io.BytesIO(base64.b16decode('1F8B08000000000000034B2C2F4EE502003091703A05000000'))
+inp = io.BytesIO(gzip.compress(b'Hello, world!'))
+field = pyflate.bit.RBitfield(inp)
+magic = field.readbits(16)
+out = pyflate.gzip_main(field)
+
+document <= 'Decompressed data: ' + out.decode('utf-8')
+</script>
+<pre id="output">Loading a demo of pyflate2. This will take a few seconds...</pre></body></html>
