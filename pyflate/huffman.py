@@ -89,14 +89,6 @@ class HuffmanTable:
             x.reverse_symbol = reverse_bits(symbol, bits)
             # print printbits(x.symbol, bits), printbits(x.reverse_symbol, bits)
 
-    def tables_by_bits(self) -> None:
-        d: T.Dict[int, T.List[HuffmanLength]] = {}
-        for x in self.table:
-            try:
-                d[x.bits].append(x)
-            except Exception:
-                d[x.bits] = [x]
-
     def find_next_symbol(self, field: Bitfield, rev: bool = True) -> int:
         cached_length = -1
         cached = None
