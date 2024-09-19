@@ -167,6 +167,10 @@ def gzip_main(f: T.BinaryIO) -> bytes:
         )
 
         log("raw block data at", b.tell())
+
+        if blocktype == 3:
+            raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
+
         if blocktype == 0:
             b.align()
             length = b.readbits(16)
@@ -178,8 +182,9 @@ def gzip_main(f: T.BinaryIO) -> bytes:
             for i in range(length):
                 out += bytes([b.readbits(8)])
             # print 'linear', b.tell()[0], 'count', length, 'bits', b.tellbits() - bheader_start
+            continue
 
-        elif blocktype == 1 or blocktype == 2:  # Huffman
+        if blocktype == 1 or blocktype == 2:  # Huffman
             main_literals, main_distances = None, None
 
             if blocktype == 1:  # Static Huffman
@@ -319,9 +324,6 @@ def gzip_main(f: T.BinaryIO) -> bytes:
                     raise Exception(
                         "illegal unused literal/length symbol in use @" + repr(b.tell())
                     )
-        elif blocktype == 3:
-            raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
-
         if lastbit:
             log("this was the last block, time to leave", b.tell())
             break
