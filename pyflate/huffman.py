@@ -138,6 +138,9 @@ class HuffmanTable:
             "unfound symbol, even after end of table @ " + repr(field.tell())
         )
 
+    def __repr__(self) -> str:
+        return f'HuffmanTable({self.table=})'
+
 class OrderedHuffmanTable(HuffmanTable):
     def __init__(self, lengths: T.List[int]):
         l = len(lengths)

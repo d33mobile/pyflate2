@@ -111,10 +111,62 @@ def extra_length_bits(n: int) -> int:
         raise Exception("illegal length code")
 
 
-# Sixteen bits of magic have been removed by the time we start decoding
-def gzip_main(f: T.BinaryIO) -> bytes:
+def load_dynamic_huffman(b: Bitfield) -> T.Tuple[HuffmanTable, HuffmanTable]:
+    dyna_start = b.tellbits()
+    len_codes = b.readbits(5)
+    literals = len_codes + 257
+    distances = b.readbits(5) + 1
+    code_lengths_length = b.readbits(4) + 4
+    log(
+        "Dynamic Huffman tree: length codes: %s, distances codes: %s, code_lengths_length: %s"
+        % (len_codes, distances, code_lengths_length)
+    )
 
-    b = Bitfield(f)
+    l = [0] * 19
+    for i in range(code_lengths_length):
+        l[code_length_orders(i)] = b.readbits(3)
+    log("lengths:", l)
+
+    dynamic_codes = OrderedHuffmanTable(l)
+    dynamic_codes.populate_huffman_symbols()
+    dynamic_codes.min_max_bits()
+
+    # Decode the code_lengths for both tables at once,
+    # then split the list later
+
+    code_lengths: T.List[int] = []
+    n = 0
+    while n < (literals + distances):
+        r = dynamic_codes.find_next_symbol(b)
+        if 0 <= r <= 15:  # literal bitlength for this code
+            count = 1
+            what = r
+        elif r == 16:  # repeat last code
+            count = 3 + b.readbits(2)
+            # Is this supposed to default to '0' if in the zeroth position?
+            what = code_lengths[-1]
+        elif r == 17:  # repeat zero
+            count = 3 + b.readbits(3)
+            what = 0
+        elif r == 18:  # repeat zero lots
+            count = 11 + b.readbits(7)
+            what = 0
+        else:
+            raise Exception(
+                "next code length is outside of the range 0 <= r <= 18"
+            )
+        code_lengths += [what] * count
+        n += count
+
+    log("Literals/len lengths:", code_lengths[:literals])
+    log("Dist lengths:", code_lengths[literals:])
+    main_literals = OrderedHuffmanTable(code_lengths[:literals])
+    main_distances = OrderedHuffmanTable(code_lengths[literals:])
+    log("Read dynamic huffman tables", b.tellbits() - dyna_start, "bits")
+    return main_literals, main_distances
+
+
+def read_gzip_header(b: Bitfield) -> None:
     magic = b.readbits(16)
     if magic != 0x8b1f:  # GZip
         raise Exception(
@@ -145,6 +197,13 @@ def gzip_main(f: T.BinaryIO) -> bytes:
             break
     if flags & 0x02:  # header-only GZ_FHCRC checksum
         b.readbits(16)
+
+
+# Sixteen bits of magic have been removed by the time we start decoding
+def gzip_main(f: T.BinaryIO) -> bytes:
+
+    b = Bitfield(f)
+    read_gzip_header(b)
 
     log("gzip header skip", b.tell())
     out = b""
@@ -187,6 +246,7 @@ def gzip_main(f: T.BinaryIO) -> bytes:
         main_literals, main_distances = None, None
 
         if blocktype == 1:  # Static Huffman
+            log("loading static huffman block")
             static_huffman_bootstrap = [
                 (0, 8),
                 (144, 9),
@@ -199,59 +259,11 @@ def gzip_main(f: T.BinaryIO) -> bytes:
             main_distances = HuffmanTable(static_huffman_lengths_bootstrap)
 
         elif blocktype == 2:  # Dynamic Huffman
-            dyna_start = b.tellbits()
-            len_codes = b.readbits(5)
-            literals = len_codes + 257
-            distances = b.readbits(5) + 1
-            code_lengths_length = b.readbits(4) + 4
-            log(
-                "Dynamic Huffman tree: length codes: %s, distances codes: %s, code_lengths_length: %s"
-                % (len_codes, distances, code_lengths_length)
-            )
-
-            l = [0] * 19
-            for i in range(code_lengths_length):
-                l[code_length_orders(i)] = b.readbits(3)
-            log("lengths:", l)
-
-            dynamic_codes = OrderedHuffmanTable(l)
-            dynamic_codes.populate_huffman_symbols()
-            dynamic_codes.min_max_bits()
-
-            # Decode the code_lengths for both tables at once,
-            # then split the list later
-
-            code_lengths: T.List[int] = []
-            n = 0
-            while n < (literals + distances):
-                r = dynamic_codes.find_next_symbol(b)
-                if 0 <= r <= 15:  # literal bitlength for this code
-                    count = 1
-                    what = r
-                elif r == 16:  # repeat last code
-                    count = 3 + b.readbits(2)
-                    # Is this supposed to default to '0' if in the zeroth position?
-                    what = code_lengths[-1]
-                elif r == 17:  # repeat zero
-                    count = 3 + b.readbits(3)
-                    what = 0
-                elif r == 18:  # repeat zero lots
-                    count = 11 + b.readbits(7)
-                    what = 0
-                else:
-                    raise Exception(
-                        "next code length is outside of the range 0 <= r <= 18"
-                    )
-                code_lengths += [what] * count
-                n += count
-
-            log("Literals/len lengths:", code_lengths[:literals])
-            log("Dist lengths:", code_lengths[literals:])
-            main_literals = OrderedHuffmanTable(code_lengths[:literals])
-            main_distances = OrderedHuffmanTable(code_lengths[literals:])
-            log("Read dynamic huffman tables", b.tellbits() - dyna_start, "bits")
+            log("loading dynamic huffman block")
+            main_literals, main_distances = load_dynamic_huffman(b)
         else:
             raise Exception("illegal unused blocktype in use @" + repr(b.tell()))
+        log('done loading huffman tables')
 
         # Common path for both Static and Dynamic Huffman decode now
 
@@ -264,6 +276,7 @@ def gzip_main(f: T.BinaryIO) -> bytes:
 
         main_literals.min_max_bits()
         main_distances.min_max_bits()
+        # log(f'{main_literals=}, {main_distances=}')
 
         literal_count = 0
         literal_start = 0
