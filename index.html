@@ -9,33 +9,35 @@
 </head><body onload="brython({debug: 1, cache: true})">
 <script type="text/python">
 
-import io
-import gzip
+    import io
+    import gzip
 
-import pyflate
-from browser import document
+    import pyflate
+    from browser import document
 
-def log(*args) -> None:
-    """Log the arguments at the debug level."""
-    s = (" ".join(map(str, args)))
-    # escape HTML entities
-    document['output'] <= f"{s}\n"
+    def log(*args) -> None:
+        """Log the arguments at the debug level."""
+        s = (" ".join(map(str, args)))
+        # escape HTML entities
+        document['output'] <= f"{s}\n"
 
-pyflate.log = log
+    pyflate.log = log
 
-inp = io.BytesIO(gzip.compress(b'Hello, world!'))
-out = pyflate.gzip_main(inp)
+    inp = io.BytesIO(gzip.compress(b'Hello, world!'))
+    out = pyflate.gzip_main(inp)
 
-document <= 'Decompressed data: ' + out.decode('utf-8')
+    document <= 'Decompressed data: ' + out.decode('utf-8')
 </script>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
 </pre>
 
-Code that's running this demo can be found at:
+<p>
+    Code that's running this demo can be found at:
 
-<a href="https://github.com/d33mobile/pyflate2/">
-https://github.com/d33mobile/pyflate2/
-</a>
+    <a href="https://github.com/d33mobile/pyflate2/">
+    https://github.com/d33mobile/pyflate2/
+    </a>
+</p>
 
 </body></html>

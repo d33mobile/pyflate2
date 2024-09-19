@@ -279,7 +279,8 @@ def gzip_main(f: T.BinaryIO) -> bytes:
                 if literal_count == 0:
                     literal_start = lz_start
                 literal_count += 1
-                log("found literal", repr((r)))
+                buf = bytes([r])
+                log(f'found literal {buf}. {r=}, {hex(r)=}')
                 out += bytes([r])
             elif 257 <= r <= 285:  # dictionary lookup
                 if literal_count > 0:

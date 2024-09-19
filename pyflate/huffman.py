@@ -25,13 +25,12 @@ class HuffmanLength:
     def __init__(self, code: int, bits: int = 0):
         self.code = code
         self.bits = bits
-        self.symbol: T.Optional[int] = None
         self.reverse_symbol: T.Optional[int] = None
 
     def __repr__(self) -> str:
         return (
             f'HL(code={self.code}, bits={self.bits}, '
-            f'symbol={self.symbol}, reverse_symbol={self.reverse_symbol})'
+            f'reverse_symbol={hex(self.reverse_symbol)})'
         )
 
     def __lt__(self, other: "HuffmanLength") -> bool:
@@ -92,7 +91,6 @@ class HuffmanTable:
             if x.bits != bits:
                 symbol <<= x.bits - bits
                 bits = x.bits
-            x.symbol = symbol
             x.reverse_symbol = reverse_bits(symbol, bits)
             # print printbits(x.symbol, bits), printbits(x.reverse_symbol, bits)
 
@@ -112,13 +110,6 @@ class HuffmanTable:
             if x.bits > self.max_bits:
                 self.max_bits = x.bits
 
-    def _find_symbol(self, bits: int, symbol: int, table: T.List[HuffmanLength]) -> int:
-        for h in table:
-            if h.bits == bits and h.reverse_symbol == symbol:
-                # print "found, processing", h.code
-                return h.code
-        return -1
-
     def find_next_symbol(self, field: Bitfield, rev: bool = True) -> int:
         cached_length = -1
         cached = None
@@ -126,9 +117,7 @@ class HuffmanTable:
             if cached_length != x.bits:
                 cached = field.snoopbits(x.bits)
                 cached_length = x.bits
-            if (rev and x.reverse_symbol == cached) or (
-                not rev and x.symbol == cached
-            ):
+            if x.reverse_symbol == cached:
                 field.readbits(x.bits)
                 log(
                     "found symbol",
@@ -136,7 +125,7 @@ class HuffmanTable:
                     "of len",
                     cached_length,
                     "mapping to",
-                    hex(x.code),
+                    hex(x.code)
                 )
                 return x.code
         raise Exception(
