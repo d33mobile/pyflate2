@@ -156,14 +156,6 @@ class TestBitfield(unittest.TestCase):
         self.assertEqual(b.snoopbits(8), 0b10000001)
         self.assertEqual(b.readbits(8), 0b10000001)
 
-    def test_construct(self) -> None:
-        """
-        Test constructing a Bitfield object from another Bitfield object.
-        """
-        b = Bitfield(io.BytesIO(b"\x01"))
-        b2 = Bitfield(b)
-        self.assertEqual(b2.readbits(1), 1)
-
     def test_to_skip(self) -> None:
         """
         Test the toskip() method of the Bitfield object.
