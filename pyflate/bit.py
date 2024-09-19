@@ -6,7 +6,6 @@ data, one or multiple bits at a time. Data is read from a file-like object.
 Bit-based snooping is and telling the current position is also supported.
 
 The Bitfield class reads the bits in the order.
-The RBitfield class reads the bits in reverse order.
 
 There are also convenience functions for gzip format, such as align().
 """
@@ -31,26 +30,18 @@ class LengthError(Exception):
 
 
 
-class BitfieldBase:
+class Bitfield:
     """
-    Base class for bitfield readers. This class is not meant to be used
-    directly, but to be subclassed by Bitfield and RBitfield.
+    Base class for bitfield readers.
     """
 
-    def __init__(self, x: T.Union[T.BinaryIO, "BitfieldBase"]) -> None:
-        """Initialize the BitfieldBase object, either from a file-like
-        object or another BitfieldBase object."""
-        if isinstance(x, BitfieldBase):
-            self.f: T.BinaryIO = x.f
-            self.bits: int = x.bits
-            self.bitfield: int = x.bitfield
-            self.count: int = x.bitfield
-        else:
-            log("BitfieldBase.__init__", x)
-            self.f = x
-            self.bits = 0
-            self.bitfield = 0x0
-            self.count = 0
+    def __init__(self, x: T.BinaryIO) -> None:
+        """Initialize the Bitfield object, either from a file-like
+        object or another Bitfield object."""
+        self.f = x
+        self.bits = 0
+        self.bitfield = 0x0
+        self.count = 0
 
     def _read(self, n: int) -> bytes:
         """Read n bytes from the file-like object."""
@@ -97,25 +88,6 @@ class BitfieldBase:
         nbytes, nbits = self.tell()
         return (nbytes << 3) + nbits
 
-    def readbits(self, n: int = 8) -> int:  # pragma: no cover
-        """Read n bits from the file-like object."""
-        raise NotImplementedError()
-
-    def snoopbits(self, n: int = 8) -> int:  # pragma: no cover
-        """Read n bits from the file-like object without moving the
-        current position."""
-        raise NotImplementedError()
-
-    def _more(self) -> None:  # pragma: no cover
-        """Read more data from the file-like object."""
-        raise NotImplementedError()
-
-
-class Bitfield(BitfieldBase):
-    """
-    Bitfield reader class. This class reads the bits in the order.
-    """
-
     def _more(self) -> None:
         """Read more data from the file-like object."""
         c = self._read(1)
@@ -139,41 +111,13 @@ class Bitfield(BitfieldBase):
         return r
 
 
-class RBitfield(BitfieldBase):
-    """
-    Bitfield reader class. This class reads the bits in reverse order.
-    """
-    def _more(self) -> None:
-        """Read more data from the file-like object."""
-        c = self._read(1)
-        self.bitfield <<= 8
-        self.bitfield += ord(c)
-        self.bits += 8
-
-    def snoopbits(self, n: int = 8) -> int:
-        """Read n bits from the file-like object without moving the
-        current position."""
-        if n > self.bits:
-            self._needbits(n)
-        return (self.bitfield >> (self.bits - n)) & self._mask(n)
-
-    def readbits(self, n: int = 8) -> int:
-        """Read n bits from the file-like object."""
-        if n > self.bits:
-            self._needbits(n)
-        r = (self.bitfield >> (self.bits - n)) & self._mask(n)
-        self.bits -= n
-        self.bitfield &= ~(self._mask(n) << self.bits)
-        return r
-
-
 import unittest
 import io
 
 
 class TestBitfield(unittest.TestCase):
     """
-    Test cases for the Bitfield and RBitfield classes.
+    Test cases for the Bitfield class.
     """
 
     def test_bitfieldu_read(self) -> None:
@@ -211,22 +155,6 @@ class TestBitfield(unittest.TestCase):
         # trigger the needbit
         self.assertEqual(b.snoopbits(8), 0b10000001)
         self.assertEqual(b.readbits(8), 0b10000001)
-
-    def test_snoop_r(self) -> None:
-        """
-        Test snooping bits from a RBitfield object.
-        """
-        digit = 0b10110110
-        b = RBitfield(io.BytesIO(bytes([digit] * 4)))
-        self.assertEqual(b.snoopbits(2), 0b10)
-        self.assertEqual(b.snoopbits(2), 0b10)
-        self.assertEqual(b.readbits(2), 0b10)
-        # trigger the needbit for snoop
-        self.assertEqual(b.snoopbits(8), 0b11011010)
-        self.assertEqual(b.readbits(8), 0b11011010)
-        # trigger the needbit for read
-        self.assertEqual(b.readbits(8), 0b11011010)
-        self.assertEqual(b.snoopbits(8), 0b11011010)
 
     def test_construct(self) -> None:
         """

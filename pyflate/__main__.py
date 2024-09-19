@@ -8,7 +8,7 @@
 import logging
 import sys
 
-from pyflate.bit import RBitfield
+from pyflate.bit import Bitfield
 from pyflate import gzip_main
 
 
@@ -18,10 +18,10 @@ def _main() -> None:
     logging.basicConfig(level=logging.DEBUG, format=fmt)
     filename = sys.argv[1]
     input = open(filename, "rb")
-    field = RBitfield(input)
+    field = Bitfield(input)
 
     magic = field.readbits(16)
-    if magic == 0x1F8B:  # GZip
+    if magic == 0x8b1f:  # GZip
         out = gzip_main(field)
     else:
         raise Exception("Unknown file magic " + hex(magic) + ", not a gzip file")

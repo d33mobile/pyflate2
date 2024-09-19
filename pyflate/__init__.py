@@ -11,7 +11,7 @@
 
 import typing as T
 import logging
-from pyflate.bit import Bitfield, RBitfield
+from pyflate.bit import Bitfield
 from pyflate.huffman import HuffmanTable, OrderedHuffmanTable
 
 
@@ -112,8 +112,7 @@ def extra_length_bits(n: int) -> int:
 
 
 # Sixteen bits of magic have been removed by the time we start decoding
-def gzip_main(field: RBitfield) -> bytes:
-    b = Bitfield(field)
+def gzip_main(b: Bitfield) -> bytes:
     method = b.readbits(8)
     if method != 8:
         raise Exception("Unknown (not type eight DEFLATE) compression method")
