@@ -24,12 +24,50 @@ def log(*args) -> None:
 pyflate.log = log
 import pyflate
 
+def print_hexdump(data: bytes) -> None:
+    """Print a hexdump of the buffer."""
+    output = ""
+    for i in range(0, len(data), 4):
+        b = data[i:i+4]
+        output += (f'{i:08x}  ')
+        for c in b:
+            output += (f'{c:02x} ')
+        # align
+        for j in range(4 - len(b)):
+            output += ('   ')
+
+
+
+        output += (' [')
+
+
+        for c in b:
+            output += (f'{c:08b} ')
+
+        # align
+        for j in range(4 - len(b)):
+            output += ('         ')
+
+        output += ('] ')
+
+        for c in b:
+            # should we use a dot for non-output += able characters?
+            if c < 32 or c > 126:
+                output += ('.')
+            else:
+                output += (chr(c))
+        output += '\n'
+    log(output)
+
+
 def run_program(*args):
     document['output'].text = '' # Clear previous output
     s = document['input'].value
-    inp = io.BytesIO(gzip.compress(s.encode()))
+    buf = gzip.compress(s.encode())
+    print_hexdump(buf)
+    inp = io.BytesIO(buf)
     out = pyflate.gzip_main(inp)
-    document <= 'Decompressed data: ' + out.decode('utf-8')
+    document['decompressed_data'].text = out.decode('utf-8')
 
 # Initial run
 run_program()
@@ -41,6 +79,8 @@ document['input'].bind('input', run_program)
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
 </pre>
+
+Decompressed data: <span id="decompressed_data"></span>
 
 <p>
     Code that's running this demo can be found at:
