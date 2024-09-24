@@ -1,33 +1,42 @@
-<html><head>
+<html>
+<head>
     <meta charset="utf-8">
-    <script type="text/javascript"
-        src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython.min.js">
-    </script>
-    <script type="text/javascript"
-        src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython_stdlib.js">
-    </script>
-</head><body onload="brython({debug: 1, cache: true})">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.12.4/brython_stdlib.js"></script>
+</head>
+<body onload="brython({debug: 1, cache: true})">
+<!-- input text -->
+<input type="text" id="input" value="Hello, world!">
 <script type="text/python">
 
-    import io
-    import gzip
+import io
+import gzip
 
-    import pyflate.log
-    from browser import document
+import pyflate.log
+from browser import document
 
-    def log(*args) -> None:
-        """Log the arguments at the debug level."""
-        s = (" ".join(map(str, args)))
-        # escape HTML entities
-        document['output'] <= f"{s}\n"
+def log(*args) -> None:
+    """Log the arguments at the debug level."""
+    s = (" ".join(map(str, args)))
+    # escape HTML entities
+    document['output'] <= f"{s}\n"
 
-    pyflate.log = log
-    import pyflate
+pyflate.log = log
+import pyflate
 
-    inp = io.BytesIO(gzip.compress(b'Hello, world!'))
+def run_program(*args):
+    document['output'].text = '' # Clear previous output
+    s = document['input'].value
+    inp = io.BytesIO(gzip.compress(s.encode()))
     out = pyflate.gzip_main(inp)
-
     document <= 'Decompressed data: ' + out.decode('utf-8')
+
+# Initial run
+run_program()
+
+# Add event listener for input change
+document['input'].bind('input', run_program)
+
 </script>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
@@ -41,4 +50,5 @@
     </a>
 </p>
 
-</body></html>
+</body>
+</html>
