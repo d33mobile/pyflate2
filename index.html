@@ -27,7 +27,7 @@ import pyflate
 
 def print_hexdump(data: bytes) -> None:
     """Print a hexdump of the buffer."""
-    output = ""
+    output = "\n"
     for i in range(0, len(data), 4):
         b = data[i:i+4]
         output += (f'{i:08x}  ')
