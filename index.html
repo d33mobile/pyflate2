@@ -65,12 +65,17 @@ def run_program(*args):
     global bit
     document['output'].text = '' # Clear previous output
     s = document['input'].value
-    buf = gzip.compress(s.encode())
-    inp = io.BytesIO(buf)
-    bit = pyflate.Bitfield(inp)
-    print_hexdump(buf)
-    out = pyflate.gzip_main_bitfield(bit)
-    document['decompressed_data'].text = out.decode('utf-8')
+    try:
+        buf = gzip.compress(s.encode())
+        inp = io.BytesIO(buf)
+        bit = pyflate.Bitfield(inp)
+        print_hexdump(buf)
+        out = pyflate.gzip_main_bitfield(bit)
+        document['decompressed_data'].text = out.decode('utf-8')
+    except Exception as e:
+        log(f"Error: {e}")
+        import traceback
+        log(traceback.format_exc())
 
 # Initial run
 run_program()
