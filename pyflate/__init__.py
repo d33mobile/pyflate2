@@ -224,9 +224,8 @@ def load_huffman_tables(b: Bitfield, blocktype: int) -> T.Tuple[HuffmanTable, Hu
     return main_literals, main_distances
 
 
-def gzip_main(f: T.BinaryIO) -> bytes:
+def gzip_main_bitfield(b: Bitfield) -> bytes:
 
-    b = Bitfield(f)
     read_gzip_header(b)
 
     log("gzip header skip", b.tell())
@@ -332,3 +331,8 @@ def gzip_main(f: T.BinaryIO) -> bytes:
     # print 'header 0 count 0 bits', b.tellbits()-bfooter_start
 
     return out
+
+
+def gzip_main(f: T.BinaryIO) -> bytes:
+    b = Bitfield(f)
+    return gzip_main_bitfield(b)

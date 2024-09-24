@@ -17,7 +17,8 @@ from browser import document
 
 def log(*args) -> None:
     """Log the arguments at the debug level."""
-    s = (" ".join(map(str, args)))
+    s = f'[{bit.tellbits()}] '
+    s += (" ".join(map(str, args)))
     # escape HTML entities
     document['output'] <= f"{s}\n"
 
@@ -61,12 +62,14 @@ def print_hexdump(data: bytes) -> None:
 
 
 def run_program(*args):
+    global bit
     document['output'].text = '' # Clear previous output
     s = document['input'].value
     buf = gzip.compress(s.encode())
-    print_hexdump(buf)
     inp = io.BytesIO(buf)
-    out = pyflate.gzip_main(inp)
+    bit = pyflate.Bitfield(inp)
+    print_hexdump(buf)
+    out = pyflate.gzip_main_bitfield(bit)
     document['decompressed_data'].text = out.decode('utf-8')
 
 # Initial run
