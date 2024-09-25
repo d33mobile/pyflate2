@@ -118,9 +118,13 @@ def run_program(*args):
         out = pyflate.gzip_main_bitfield(bit)
         document['decompressed_data'].text = out.decode('utf-8')
     except Exception as e:
+        document['hexdump'].clear()
+        log_to_html = log_to_html_copy
         log(f"Error: {e}")
         import traceback
         log(traceback.format_exc())
+    finally:
+        log_to_html = log_to_html_copy
 
 # Initial run
 run_program()
