@@ -321,12 +321,14 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
     footer_start = b.tell()
     bfooter_start = b.tellbits()
     b.align()
+    log("end of stream, aligning to byte boundary")
     crc = b.readbits(32)
+    log("crc")
     final_length = b.readbits(32)
+    log("final length")
     # print len(out)
     next_unused = b.tell()
     # print 'deflate-end-of-stream', 5, 'beginning at', footer_start, 'raw data at', next_unused, 'bits', b.tellbits() - bfooter_start
-    log("deflate-end-of-stream")
     # print 'crc', hex(crc), 'final length', final_length
     # print 'header 0 count 0 bits', b.tellbits()-bfooter_start
 
