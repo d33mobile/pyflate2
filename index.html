@@ -48,6 +48,17 @@ def equidistributed_color(i, n):
     )
 
 
+def el_mouseleave(ev):
+    cls = ev.target.classList[0]
+    for el in document.getElementsByClassName(cls):
+        el.style.backgroundColor = 'white'
+
+def el_mouseenter(ev):
+    cls = ev.target.classList[0]
+    for el in document.getElementsByClassName(cls):
+        el.style.backgroundColor = 'black'
+
+
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
     log_messages_sorted = sorted(log_messages.items())
     num_log_messages = len(log_messages_sorted)
@@ -57,16 +68,19 @@ def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
     log_message_no = 0
     bit_to_log_message = {}
     for bit_number in range(0, len(data) * 8):
-        bit_b = data[bit_number // 8] & (1 << (7 - (bit_number % 8))) != 0
-        bit = '1' if bit_b else '0'
         # is bit_number still lower than the current log message? rewind otherwise
         while log_message is not None and bit_number >= log_message[0]:
             log_message = next(log_message_iter, None)
             log_message_s = '\n'.join(log_message[1]) if log_message is not None else ''
             log_message_no += 1
         color = equidistributed_color(log_message_no, num_log_messages)
-        style = f'color: rgb({int(color[0]*255)}, {int(color[1]*255)}, {int(color[2]*255)});'
-        el = S(bit, style=style, title=log_message_s)
+        colors = f'{int(color[0]*255)}, {int(color[1]*255)}, {int(color[2]*255)}'
+        style = f'color: rgb({colors});'
+        cls = f'message-{log_message_no}'
+        el = S(style=style, title=log_message_s)
+        el.classList.add(cls)
+        el.bind('mouseenter', el_mouseenter)
+        el.bind('mouseleave', el_mouseleave)
         bit_to_log_message[bit_number] = el
     return bit_to_log_message
 
@@ -134,7 +148,15 @@ def run_program(*args):
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
         out = pyflate.gzip_main_bitfield(bit)
-        document['decompressed_data'].text = out.decode('utf-8')
+        summary = f'Compressed {len(s)} bytes to {len(buf)} bytes.'
+        if len(buf) > len(s):
+            summary += ' Compression made it bigger by '
+            summary += f'{len(buf) - len(s)} bytes.'
+        else:
+            summary += ' Compression made it smaller by '
+            summary += f'{len(s) - len(buf)} bytes.'
+        summary += f' Compression ratio: {len(buf) / len(s):.2f}'
+        document['compression_result'].text = summary
     except Exception as e:
         document['hexdump'].clear()
         log_to_html = log_to_html_copy
@@ -159,7 +181,6 @@ document['input'].bind('input', run_program)
 
 </pre>
 
-Decompressed data: <span id="decompressed_data"></span>
 
 <p>
     Code that's running this demo can be found at:
