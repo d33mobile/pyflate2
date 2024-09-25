@@ -42,13 +42,22 @@ import pyflate
 
 
 def equidistributed_color(i, n):
-    return colorsys.hsv_to_rgb(i / n, 1, 1)
+    # https://gamedev.stackexchange.com/a/46469/22860
+    return colorsys.hsv_to_rgb(
+        (i * 0.618033988749895) % 1.0, 0.5, 1.0 - (i * 0.618033988749895) % 0.5
+    )
 
 def print_hexdump(data: bytes) -> None:
     """Print a hexdump of the buffer."""
     hd = document['hexdump']
+    hd.clear()
     bit_number = 0
-    num_bits = len(data) * 8
+    log_messages_sorted = sorted(log_messages.items())
+    num_log_messages = len(log_messages_sorted)
+    log_message_iter = iter(log_messages_sorted)
+    log_message = next(log_message_iter, None)
+    log_message_s = '\n'.join(log_message[1]) if log_message is not None else ''
+    log_message_no = 0
     for i in range(0, len(data), 4):
         b = data[i:i+4]
         # print hex
@@ -63,9 +72,14 @@ def print_hexdump(data: bytes) -> None:
         for c in b:
             bits = f'{c:08b}'
             for bit in bits:
-                color = equidistributed_color(bit_number, num_bits)
+                # is bit_number still lower than the current log message? rewind otherwise
+                while log_message is not None and bit_number >= log_message[0]:
+                    log_message = next(log_message_iter, None)
+                    log_message_s = '\n'.join(log_message[1]) if log_message is not None else ''
+                    log_message_no += 1
+                color = equidistributed_color(log_message_no, num_log_messages)
                 style = f'color: rgb({int(color[0]*255)}, {int(color[1]*255)}, {int(color[2]*255)});'
-                hd <= S(bit, style=style)
+                hd <= S(bit, style=style, title=log_message_s)
                 bit_number += 1
             hd <= S(' ')
         # align binary
@@ -115,6 +129,8 @@ run_program()
 document['input'].bind('input', run_program)
 
 </script>
+<p>Warning: hexdump is buggy, it doesn't show the correct log messages for
+each bit. It's a WIP.</p>
 <pre id="hexdump"></pre>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
