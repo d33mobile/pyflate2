@@ -11,62 +11,82 @@
 
 import io
 import gzip
+import collections
 
 import pyflate.log
 from browser import document
+from browser.html import BR, SPAN as S
+
+
+log_messages = collections.defaultdict(list)
+
+
+def log_to_html(s):
+    document['output'] <= s
+
+
+def log_noop(s):
+    pass
+
 
 def log(*args) -> None:
     """Log the arguments at the debug level."""
-    s = f'[{bit.tellbits()}] '
-    s += (" ".join(map(str, args)))
-    # escape HTML entities
-    document['output'] <= f"{s}\n"
+    offset = bit.tellbits()
+    s = (" ".join(map(str, args)))
+    log_messages[offset].append(s)
+    log_to_html(f'[{offset}] {s}\n')
 
 pyflate.log = log
 import pyflate
 
 def print_hexdump(data: bytes) -> None:
     """Print a hexdump of the buffer."""
-    output = "\n"
+    hd = document['hexdump']
+    bit_number = 0
     for i in range(0, len(data), 4):
         b = data[i:i+4]
-        output += (f'{i:08x}  ')
+        # print hex
+        hd <= S(f'{i:08x}  ')
         for c in b:
-            output += (f'{c:02x} ')
-        # align
+            hd <= S(f'{c:02x} ')
+        # align hex
         for j in range(4 - len(b)):
-            output += ('   ')
-
-
-
-        output += (' [')
-
-
+            hd <= S('   ')
+        hd <= S(' [')
+        # print binary
         for c in b:
-            output += (f'{c:08b} ')
-
-        # align
+            hd <= S(f'{c:08b} ')
+            bit_number += 1
+        # align binary
         for j in range(4 - len(b)):
-            output += ('         ')
-
-        output += ('] ')
-
+            hd <= S('         ')
+        hd <= S('] ')
+        # print ASCII
         for c in b:
-            # should we use a dot for non-output += able characters?
+            # should we use a dot for non-hd <= Sable characters?
             if c < 32 or c > 126:
-                output += ('.')
+                hd <= S('.')
             else:
-                output += (chr(c))
-        output += '\n'
-    log(output)
+                hd <= S(chr(c))
+        hd <= BR()
 
 
 def run_program(*args):
-    global bit
+    global bit, log_to_html, log_messages
     document['output'].text = '' # Clear previous output
     s = document['input'].value
+    log_to_html_copy = log_to_html
+    log_messages = collections.defaultdict(list)
     try:
         buf = gzip.compress(s.encode())
+
+        # we do a dry run first to get the log messages for hexdump
+        log_to_html = log_noop
+        inp = io.BytesIO(buf)
+        bit = pyflate.Bitfield(inp)
+        out = pyflate.gzip_main_bitfield(bit)
+
+        log_to_html = log_to_html_copy
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
@@ -84,6 +104,7 @@ run_program()
 document['input'].bind('input', run_program)
 
 </script>
+<pre id="hexdump"></pre>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
 </pre>
