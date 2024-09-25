@@ -103,7 +103,7 @@ def run_program(*args):
     log_to_html_copy = log_to_html
     log_messages = collections.defaultdict(list)
     try:
-        buf = gzip.compress(s.encode())
+        buf = gzip.compress(s.encode(), mtime=0)
 
         # we do a dry run first to get the log messages for hexdump
         log_to_html = log_noop
