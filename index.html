@@ -10,6 +10,7 @@
       max-width: 100vw;
       overflow: auto;
       white-space: pre-wrap;
+      color: green;
     }
 </style>
 </head>
@@ -31,11 +32,14 @@ from browser.html import BR, SPAN as S
 log_messages = collections.defaultdict(list)
 
 
-def log_to_html(s):
-    document['output'] <= s
+def log_to_html(s, offset=None):
+    el = S(s)
+    if offset is not None:
+        el.classList.add(f'message-{offset}')
+    document['output'] <= el
 
 
-def log_noop(s):
+def log_noop(s, offset=None):
     pass
 
 
@@ -44,7 +48,7 @@ def log(*args) -> None:
     offset = bit.tellbits()
     s = (" ".join(map(str, args)))
     log_messages[offset].append(s)
-    log_to_html(f'[{offset}] {s}\n')
+    log_to_html(f'[{offset}] {s}\n', offset)
 
 pyflate.log = log
 import pyflate
@@ -85,7 +89,7 @@ def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
         color = equidistributed_color(log_message_no, num_log_messages)
         colors = f'{int(color[0]*255)}, {int(color[1]*255)}, {int(color[2]*255)}'
         style = f'color: rgb({colors});'
-        cls = f'message-{log_message_no}'
+        cls = f'message-{log_message[0]}'
         el = S(style=style, title=log_message_s)
         el.classList.add(cls)
         el.bind('mouseenter', el_mouseenter)
