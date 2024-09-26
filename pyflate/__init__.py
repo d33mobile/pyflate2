@@ -248,7 +248,9 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
             if length & b.readbits(16):
                 raise Exception("stored block lengths do not match each other")
             for i in range(length):
-                out += bytes([b.readbits(8)])
+                toadd += bytes([b.readbits(8)])
+                out += toadd
+                yield toadd
             continue
 
         main_literals, main_distances = load_huffman_tables(b, blocktype)
@@ -272,8 +274,10 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
                     literal_start = lz_start
                 literal_count += 1
                 buf = bytes([r])
-                log(f'found literal {buf}. {r=}, {hex(r)=}')
-                out += bytes([r])
+                log(f'\nfound literal {buf}. {r=}, {hex(r)=}')
+                toadd = bytes([r])
+                out += toadd
+                yield toadd
             elif 257 <= r <= 285:  # dictionary lookup
                 if literal_count > 0:
                     # print 'add 0 count', literal_count, 'bits', lz_start-literal_start, 'data', `out[-literal_count:]`
@@ -290,12 +294,18 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
                     )
                     cached_length = length
                     while length > distance:
-                        out += out[-distance:]
+                        toadd = out[-distance:]
+                        out += toadd
+                        yield toadd
                         length -= distance
                     if length == distance:
-                        out += out[-distance:]
+                        toadd = out[-distance:]
+                        out += toadd
+                        yield toadd
                     else:
-                        out += out[-distance : length - distance]
+                        toadd = out[-distance : length - distance]
+                        out += toadd
+                        yield toadd
                     log("dictionary lookup: length", cached_length)
                     log(
                         "copy",
@@ -337,4 +347,7 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
 
 def gzip_main(f: T.BinaryIO) -> bytes:
     b = Bitfield(f)
-    return gzip_main_bitfield(b)
+    out = ""
+    for buf in gzip_main_bitfield(b):
+        out += buf
+    return out

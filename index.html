@@ -156,13 +156,13 @@ def run_program(*args):
         log_to_html = log_noop
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
-        out = pyflate.gzip_main_bitfield(bit)
+        out = list(pyflate.gzip_main_bitfield(bit))
 
         log_to_html = log_to_html_copy
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
-        out = pyflate.gzip_main_bitfield(bit)
+        out = list(pyflate.gzip_main_bitfield(bit))
         summary = f'Compressed {len(s)} bytes to {len(buf)} bytes.'
         if len(buf) > len(s):
             summary += ' Compression made it bigger by '
