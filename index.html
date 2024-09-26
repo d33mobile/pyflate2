@@ -36,6 +36,8 @@ def log_to_html(s, offset=None):
     el = S(s)
     if offset is not None:
         el.classList.add(f'message-{offset}')
+        el.bind('mouseenter', el_mouseenter)
+        el.bind('mouseleave', el_mouseleave)
     document['output'] <= el
 
 
@@ -188,6 +190,7 @@ document['input'].bind('input', run_program)
 </script>
 
 <p id="compression_result"></p>
+<p><strong>Hover/tap over the bits to see their meaning.</strong></p>
 
 <pre id="hexdump"></pre>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
