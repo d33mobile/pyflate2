@@ -53,6 +53,10 @@ def log(*args) -> None:
     log_to_html(f'[{offset}] {s}\n', offset)
 
 pyflate.log.log = log
+
+import pyflate.huffman
+pyflate.huffman.log = log
+
 import pyflate
 pyflate.log = log
 
