@@ -52,7 +52,7 @@ def log(*args) -> None:
     log_messages[offset].append(s)
     log_to_html(f'[{offset}] {s}\n', offset)
 
-pyflate.log = log
+pyflate.log.log = log
 import pyflate
 
 
