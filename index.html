@@ -67,11 +67,23 @@ def el_mouseleave(ev):
     cls = ev.target.classList[0]
     for el in document.getElementsByClassName(cls):
         el.style.backgroundColor = 'white'
+    document['selected_bits'].text = ''
 
 def el_mouseenter(ev):
     cls = ev.target.classList[0]
+    bits = {}
     for el in document.getElementsByClassName(cls):
+        classes = el.classList
+        for c in classes:
+            if c.startswith('bit-'):
+                class_bits = int(c[4:])
+                t = (class_bits)
+                bits[t] = el.text
         el.style.backgroundColor = 'black'
+    bits_s = ''.join(bits[k] for k in reversed(sorted(bits.keys())))
+    bits_i = int(bits_s, 2)
+    document['selected_bits'].text = f'{bits_s} ({bits_i}, 0x{bits_i:02X})'
+    #document['selected_bits'].text = repr(bits)
 
 
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
@@ -94,6 +106,7 @@ def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
         cls = f'message-{log_message[0]}'
         el = S(style=style, title=log_message_s)
         el.classList.add(cls)
+        el.classList.add(f'bit-{bit_number}')
         el.bind('mouseenter', el_mouseenter)
         el.bind('mouseleave', el_mouseleave)
         bit_to_log_message[bit_number] = el
@@ -190,6 +203,7 @@ document['input'].bind('input', run_program)
 </script>
 
 <p id="compression_result"></p>
+Selected bits: <span id="selected_bits"></span>
 <p><strong>Hover/tap over the bits to see their meaning.</strong></p>
 
 <pre id="hexdump"></pre>
