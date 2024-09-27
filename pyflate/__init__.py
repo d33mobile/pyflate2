@@ -274,7 +274,7 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
                     literal_start = lz_start
                 literal_count += 1
                 buf = bytes([r])
-                log(f'\nfound literal {buf}. {r=}, {hex(r)=}')
+                log(f'found literal {buf}. {r=}, {hex(r)=}')
                 toadd = bytes([r])
                 out += toadd
                 yield toadd
