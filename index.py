@@ -11,12 +11,15 @@ import traceback
 
 import pyflate
 import pyflate.huffman
+
 try:
     from browser import document
     from browser.html import BR, SPAN as S
+
     BROWSER = True
 except ImportError:
     import sys
+
     sys.exit("ERROR: This script is meant to be run in a browser.")
     BROWSER = False  # pylint: disable=unreachable
 
@@ -83,35 +86,44 @@ def el_mouseenter(ev):
 
 
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
-    log_messages_sorted = sorted(log_messages.items())
-    num_log_messages = len(log_messages_sorted)
-    log_message_iter = iter(log_messages_sorted)
+
+    log_message_iter = iter(sorted(log_messages.items()))
     log_message_no = -1
 
-    log_message = next(log_message_iter, None)
-    log_message_s = (
-        "\n".join(log_message[1]) if log_message is not None else ""
-    )
-    log_message_no += 1
-    color = equidistributed_color(log_message_no)
-    colors = ','.join(f'{int(c*255)}' for c in color)
-    style = f"color: rgb({colors});"
-    cls = f"message-{log_message[0]}"
+    def next_log_message(log_message_iter):
+        nonlocal log_message_no
+        log_message = next(log_message_iter, None)
+        log_message_s = (
+            "\n".join(log_message[1]) if log_message is not None else ""
+        )
+        log_message_bitno = log_message[0]
+        log_message_no += 1
+        color = equidistributed_color(log_message_no)
+        colors = ",".join(f"{int(c*255)}" for c in color)
+        style = f"color: rgb({colors});"
+        cls = f"message-{log_message[0]}"
+        return log_message_bitno, log_message_s, log_message_no, style, cls
+
+    (
+        log_message_bitno,
+        log_message_s,
+        log_message_no,
+        style,
+        cls,
+    ) = next_log_message(log_message_iter)
 
     bit_to_log_message = {}
     for bit_number in range(0, len(data) * 8):
         # is bit_number still lower than the current log message?
         # rewind otherwise
-        while bit_number >= log_message[0]:
-            log_message = next(log_message_iter, None)
-            log_message_s = (
-                "\n".join(log_message[1]) if log_message is not None else ""
-            )
-            log_message_no += 1
-            color = equidistributed_color(log_message_no)
-            colors = ','.join(f'{int(c*255)}' for c in color)
-            style = f"color: rgb({colors});"
-            cls = f"message-{log_message[0]}"
+        while bit_number >= log_message_bitno:
+            (
+                log_message_bitno,
+                log_message_s,
+                log_message_no,
+                style,
+                cls,
+            ) = next_log_message(log_message_iter)
         el = S(style=style, title=log_message_s)
         el.classList.add(cls)
         el.classList.add(f"bit-{bit_number}")
