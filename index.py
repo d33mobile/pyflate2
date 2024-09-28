@@ -1,12 +1,33 @@
+# Expressions like "document <= BR()" result in "is assigned to nothing"
+# warning. Let's ignore it:
+#
+# pylint: disable=expression-not-assigned,pointless-statement
+
 import io
 import gzip
 import collections
 import colorsys
+import traceback
 
 import pyflate
 import pyflate.huffman
-from browser import document
-from browser.html import BR, SPAN as S
+try:
+    from browser import document
+    from browser.html import BR, SPAN as S
+    BROWSER = True
+except ImportError:
+    import sys
+    sys.exit("ERROR: This script is meant to be run in a browser.")
+    BROWSER = False  # pylint: disable=unreachable
+
+
+# We need a few globals, let's initialize them to None explicitly.
+# log_to_html is a function that logs a message to the output area and will
+# be monkey-patched to log_noop during the dry run.
+#
+# pylint: disable=function-redefined
+bit = log_to_html = None
+log_messages = collections.defaultdict(list)
 
 
 def log_to_html(s, offset=None):
@@ -18,7 +39,7 @@ def log_to_html(s, offset=None):
     document["output"] <= el
 
 
-def log_noop(s, offset=None):
+def log_noop(_, __=None):
     pass
 
 
@@ -30,7 +51,7 @@ def log(*args) -> None:
     log_to_html(f"[{offset}] {s}\n", offset)
 
 
-def equidistributed_color(i, n):
+def equidistributed_color(i):
     # https://gamedev.stackexchange.com/a/46469/22860
     return colorsys.hsv_to_rgb(
         (i * 0.618033988749895) % 1.0, 0.5, 1.0 - (i * 0.618033988749895) % 0.5
@@ -80,7 +101,7 @@ def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
                 "\n".join(log_message[1]) if log_message is not None else ""
             )
             log_message_no += 1
-        color = equidistributed_color(log_message_no, num_log_messages)
+        color = equidistributed_color(log_message_no)
         colors = (
             f"{int(color[0]*255)}, {int(color[1]*255)}, {int(color[2]*255)}"
         )
@@ -109,7 +130,7 @@ def print_hexdump(data: bytes) -> None:
         for c in b:
             hd <= S(f"{c:02x} ")
         # align hex
-        for j in range(4 - len(b)):
+        for _ in range(4 - len(b)):
             hd <= S("   ")
         hd <= S(" [")
         # print binary
@@ -125,7 +146,7 @@ def print_hexdump(data: bytes) -> None:
             hd <= S(" ")
             byte_number += 1
         # align binary
-        for j in range(4 - len(b)):
+        for _ in range(4 - len(b)):
             hd <= S("         ")
         hd <= S("] ")
         # print ASCII
@@ -138,7 +159,8 @@ def print_hexdump(data: bytes) -> None:
         hd <= BR()
 
 
-def run_program(*args):
+def run_program():
+    # pylint: disable=global-statement
     global bit, log_to_html, log_messages
     document["output"].text = ""  # Clear previous output
     s = document["input"].value
@@ -171,14 +193,12 @@ def run_program(*args):
         document["hexdump"].clear()
         log_to_html = log_to_html_copy
         log(f"Error: {e}")
-        import traceback
 
         log(traceback.format_exc())
     finally:
         log_to_html = log_to_html_copy
 
 
-log_messages = collections.defaultdict(list)
 pyflate.huffman.log = log
 pyflate.log = log
 run_program()
