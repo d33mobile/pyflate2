@@ -103,7 +103,7 @@ def print_hexdump(data: bytes) -> None:
     bit_to_log_message = gen_bit_to_log_message(data, log_messages)
     byte_number = 0
     for i in range(0, len(data), 4):
-        b = data[i : i + 4]
+        b = data[i: i + 4]
         # print hex
         hd <= S(f"{i:08x}  ")
         for c in b:
@@ -151,13 +151,13 @@ def run_program(*args):
         log_to_html = log_noop
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
-        out = list(pyflate.gzip_main_bitfield(bit))
+        _ = list(pyflate.gzip_main_bitfield(bit))
 
         log_to_html = log_to_html_copy
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
-        out = list(pyflate.gzip_main_bitfield(bit))
+        _ = list(pyflate.gzip_main_bitfield(bit))
         summary = f"Compressed {len(s)} bytes to {len(buf)} bytes."
         if len(buf) > len(s):
             summary += " Compression made it bigger by "
