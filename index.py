@@ -1,8 +1,3 @@
-# Expressions like "document <= BR()" result in "is assigned to nothing"
-# warning. Let's ignore it:
-#
-# pylint: disable=expression-not-assigned,pointless-statement
-
 import io
 import gzip
 import collections
@@ -24,6 +19,11 @@ except ImportError:
     BROWSER = False  # pylint: disable=unreachable
 
 
+# Expressions like "document <= BR()" result in "is assigned to nothing"
+# warning. Let's ignore it:
+#
+# pylint: disable=expression-not-assigned,pointless-statement
+
 # We need a few globals, let's initialize them to None explicitly.
 # log_to_html is a function that logs a message to the output area and will
 # be monkey-patched to log_noop during the dry run.
@@ -34,6 +34,9 @@ log_messages = collections.defaultdict(list)
 
 
 def log_to_html(s, offset=None):
+    """Log the string to the output area. Bind mouseenter and mouseleave
+    events to the element so that we can highlight the corresponding bits
+    in the hexdump and message log."""
     el = S(s)
     if offset is not None:
         el.classList.add(f"message-{offset}")
@@ -43,6 +46,7 @@ def log_to_html(s, offset=None):
 
 
 def log_noop(_, __=None):
+    """No-op log function used during the dry run."""
     pass
 
 
@@ -55,6 +59,8 @@ def log(*args) -> None:
 
 
 def equidistributed_color(i):
+    """Generate an equidistributed color, so that the bit colors are
+    visually distinct."""
     # https://gamedev.stackexchange.com/a/46469/22860
     return colorsys.hsv_to_rgb(
         (i * 0.618033988749895) % 1.0, 0.5, 1.0 - (i * 0.618033988749895) % 0.5
@@ -62,6 +68,7 @@ def equidistributed_color(i):
 
 
 def el_mouseleave(ev):
+    """Handle mouseleave event by undoing the highlighting."""
     cls = ev.target.classList[0]
     for el in document.getElementsByClassName(cls):
         el.style.backgroundColor = "white"
@@ -69,6 +76,8 @@ def el_mouseleave(ev):
 
 
 def el_mouseenter(ev):
+    """Handle mouseenter event by highlighting the corresponding bits in
+    the hexdump and message log."""
     cls = ev.target.classList[0]
     bits = {}
     for el in document.getElementsByClassName(cls):
@@ -86,6 +95,8 @@ def el_mouseenter(ev):
 
 
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
+    """Generate a mapping from bit number to log message DOM element that
+    has colors and log messages tied to it."""
 
     log_message_iter = iter(sorted(log_messages.items()))
     log_message_no = -1
@@ -134,23 +145,27 @@ def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
 
 
 def print_hexdump(data: bytes) -> None:
-    """Print a hexdump of the buffer."""
+    """Print an interactive hexdump with binary representation and ASCII
+    representation of the data, allowing to highlight bits in the hexdump
+    and see the corresponding log messages."""
     hd = document["hexdump"]
     hd.clear()
 
     bit_to_log_message = gen_bit_to_log_message(data, log_messages)
     byte_number = 0
+    # We print 4 bytes per line:
     for i in range(0, len(data), 4):
-        b = data[i: i + 4]
-        # print hex
+        b = data[i : i + 4]
+        # print offset
         hd <= S(f"{i:08x}  ")
+        # print hex
         for c in b:
             hd <= S(f"{c:02x} ")
         # align hex
         for _ in range(4 - len(b)):
             hd <= S("   ")
         hd <= S(" [")
-        # print binary
+        # print binary - this is the complex part
         for c in b:
             bits = f"{c:08b}"
             for n, bit in enumerate(bits):
@@ -177,26 +192,36 @@ def print_hexdump(data: bytes) -> None:
 
 
 def run_program():
+    """Run the program. This function is called when the input changes and
+    when the page is loaded."""
     # pylint: disable=global-statement
     global bit, log_to_html, log_messages
     document["output"].text = ""  # Clear previous output
     s = document["input"].value
+    # Backup the original log_to_html function and replace it with a no-op
+    # function during the dry run.
+    #
+    # We do the dry run to get the log messages before we print the hexdump.
     log_to_html_copy = log_to_html
+    log_to_html = log_noop
     log_messages = collections.defaultdict(list)
     try:
         buf = gzip.compress(s.encode(), mtime=0)
+        inp = io.BytesIO(buf)
 
         # we do a dry run first to get the log messages for hexdump
-        log_to_html = log_noop
-        inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         _ = list(pyflate.gzip_main_bitfield(bit))
 
+        # restore the original log_to_html function, re-run the program
+        # and print the hexdump
         log_to_html = log_to_html_copy
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
         _ = list(pyflate.gzip_main_bitfield(bit))
+
+        # Print the compression result
         summary = f"Compressed {len(s)} bytes to {len(buf)} bytes."
         if len(buf) > len(s):
             summary += " Compression made it bigger by "
@@ -207,12 +232,15 @@ def run_program():
         summary += f" Compression ratio: {len(buf) / len(s):.2f}"
         document["compression_result"].text = summary
     except Exception as e:
+        # In case of error, clear the hexdump and log the error message to
+        # the output area. It might be relevant to log the traceback as well.
         document["hexdump"].clear()
         log_to_html = log_to_html_copy
         log(f"Error: {e}")
-
         log(traceback.format_exc())
     finally:
+        # Always restore the original log_to_html function so that the
+        # next invocation of run_program() works as expected.
         log_to_html = log_to_html_copy
 
 
