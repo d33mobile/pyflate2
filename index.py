@@ -191,7 +191,7 @@ def print_hexdump(data: bytes) -> None:
         hd <= BR()
 
 
-def run_program():
+def run_program(*_, **__) -> None:
     """Run the program. This function is called when the input changes and
     when the page is loaded."""
     # pylint: disable=global-statement
