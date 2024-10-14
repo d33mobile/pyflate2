@@ -79,6 +79,7 @@ def el_mouseleave(ev):
 def el_mouseenter(ev):
     """Handle mouseenter event by highlighting the corresponding bits in
     the hexdump and message log."""
+
     cls = ev.target.classList[0]
     bits = {}
     for el in document.getElementsByClassName(cls):
@@ -93,12 +94,30 @@ def el_mouseenter(ev):
     bits_i = int(bits_s, 2)
     document["selected_bits"].text = f"{bits_s} ({bits_i}, 0x{bits_i:02X})"
 
+    # figure out if the bit is a bit or a log message.
+    # we need to scroll the OPPOSITE type of element into view
+    initiating_element = ev.target
+    is_bit = False
+    for class_name in initiating_element.classList:
+        if class_name.startswith("bit-"):
+            is_bit = True
+            break
+
     # find element in log and scroll to it.
     num = cls.split("-")[-1]
-    el = list(document.getElementsByClassName(f"log-message-{num}"))
-    if el or True:
-        el = el[0]
-        el.scrollIntoView()
+    for el in document.getElementsByClassName(f"message-{num}"):
+
+        # is the element a bit or a log message?
+        el_is_bit = False
+        for class_name in el.classList:
+            if class_name.startswith("bit-"):
+                el_is_bit = True
+                break
+
+        # scroll the opposite type of element into view
+        if el_is_bit != is_bit:
+            el.scrollIntoView()
+            break
 
 
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
