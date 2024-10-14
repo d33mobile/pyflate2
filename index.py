@@ -95,6 +95,10 @@ def el_mouseenter(ev):
     bits_i = int(bits_s, 2)
     document["selected_bits"].text = f"{bits_s} ({bits_i}, 0x{bits_i:02X})"
 
+    # for all elements with class huffman-{bits_i}, scroll them into view
+    for el in document.getElementsByClassName(f"huffman-{bits_i}"):
+        el.scrollIntoView()
+
     # figure out if the bit is a bit or a log message.
     # we need to scroll the OPPOSITE type of element into view
     initiating_element = ev.target
@@ -232,6 +236,8 @@ def visualize_huffman(huff1, table_class, is_first=True):
     for huff in sorted(huff1.table, key=lambda h: h.reverse_symbol):
         huff_row = H.TR()
         rev = str(huff.reverse_symbol)
+        # add huffman_{reverse_symbol} class to the row
+        huff_row.classList.add(f"huffman-{huff.reverse_symbol}")
         rev += f' (0x{huff.reverse_symbol:02X})'
         huff_row <= H.TD(rev)
         code = str(huff.code)
