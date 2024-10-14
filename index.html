@@ -15,21 +15,97 @@
 </style>
 </head>
 <body onload="brython({debug: 1, cache: true})">
-<!-- input text -->
-<input type="text" id="input" value="Hello, world!">
 <script type="text/python" src="index.py"></script>
 
+<!-- we need to split this vertically into the following sections:
+
+1. input text (2 lines)
+2. compression result (2 lines)
+3. hexdump (10% of the height)
+4. selected bits (2 lines)
+5. log (flexible height)
+6. footer (2 lines)
+
+let's use flexbox for this. don't allow the main container to scroll, but allow the individual sections to scroll if needed.
+
+make sections stick to the top and bottom of the container, and make the middle sections scrollable if needed.
+
+-->
+
+<style>
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.flex-container > * {
+  flex: 1;
+  overflow: auto;
+}
+
+.input {
+  height: 2em;
+  font-size: 20px;
+}
+
+.bit_explanation {
+    height: 15%;
+}
+
+#explanation_hint {
+    height: 1em;
+}
+
+#compression_result {
+    height: 2em;
+}
+
+#hexdump {
+  height: 10%;
+}
+
+.selected_bits_container {
+  height: 2em;
+}
+
+#output {
+    flex: 1;
+}
+
+.footer {
+    height: 2em;
+    padding: 1em;
+}
+
+</style>
+
+
+
+<!-- 1. input text -->
+<input type="text" id="input" value="Hello, world!" class="input">
+
+<!-- 2. compression result -->
+<span class="bit_explanation">
+<p id="explanation_hint"><strong>Hover/tap over the bits to see their meaning.</strong></p>
 <p id="compression_result"></p>
-<p><strong>Hover/tap over the bits to see their meaning.</strong></p>
+</span>
 
+<!-- 3. hexdump -->
 <pre id="hexdump"></pre>
-Selected bits: <span id="selected_bits"></span>
-<pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 
+<!-- 4. selected bits -->
+<span class="selected_bits_container">
+Selected bits: <span id="selected_bits"></span>
+</span>
+
+<!-- 5. log -->
+<pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 </pre>
 
-
-<p>
+<!-- 6. footer -->
+<p class="footer">
     Code that's running this demo can be found at:
 
     <a href="https://github.com/d33mobile/pyflate2/">

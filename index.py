@@ -40,6 +40,7 @@ def log_to_html(s, offset=None):
     el = S(s)
     if offset is not None:
         el.classList.add(f"message-{offset}")
+        el.classList.add(f"log-message-{offset}")
         el.bind("mouseenter", el_mouseenter)
         el.bind("mouseleave", el_mouseleave)
     document["output"] <= el
@@ -91,7 +92,13 @@ def el_mouseenter(ev):
     bits_s = "".join(bits[k] for k in reversed(sorted(bits.keys())))
     bits_i = int(bits_s, 2)
     document["selected_bits"].text = f"{bits_s} ({bits_i}, 0x{bits_i:02X})"
-    # document['selected_bits'].text = repr(bits)
+
+    # find element in log and scroll to it.
+    num = cls.split("-")[-1]
+    el = list(document.getElementsByClassName(f"log-message-{num}"))
+    if el or True:
+        el = el[0]
+        el.scrollIntoView()
 
 
 def gen_bit_to_log_message(data: bytes, log_messages) -> dict:
