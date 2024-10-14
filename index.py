@@ -245,7 +245,8 @@ def visualize_huffman(huff1, table_class, is_first=True):
             else:
                 try:
                     extra = pyflate.extra_length_bits(huff.code)
-                    code += f" (extra {extra} bits)"
+                    base = pyflate.length_base(huff.code)
+                    code += f" (extra {extra}B, base {base})"
                 except:
                     code = '(UNUSED?)'
         huff_row <= H.TD(code)
