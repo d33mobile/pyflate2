@@ -9,6 +9,7 @@ import pyflate.huffman
 
 try:
     from browser import document
+    import browser.html as H
     from browser.html import BR, SPAN as S
 
     BROWSER = True
@@ -217,6 +218,42 @@ def print_hexdump(data: bytes) -> None:
         hd <= BR()
 
 
+def visualize_huffman(huff1, table_class, is_first=True):
+    huffmans = document[table_class]
+    huffmans.clear()
+
+    huff_table = H.TABLE()
+
+    header_row = H.TR()
+    header_row <= H.TH("Symbol")
+    header_row <= H.TH("Code")
+    huff_table <= header_row
+
+    for huff in sorted(huff1.table, key=lambda h: h.reverse_symbol):
+        huff_row = H.TR()
+        rev = str(huff.reverse_symbol)
+        rev += f' (0x{huff.reverse_symbol:02X})'
+        huff_row <= H.TD(rev)
+        code = str(huff.code)
+        if is_first:
+            # add chr(huff.code) if it's a printable character
+            if huff.code < 256:
+                c = chr(huff.code)
+                code += f" ({repr(c)})"
+            elif huff.code == 256:
+                code = "EOF"
+            else:
+                try:
+                    extra = pyflate.extra_length_bits(huff.code)
+                    code += f" (extra {extra} bits)"
+                except:
+                    code = '(UNUSED?)'
+        huff_row <= H.TD(code)
+        huff_table <= huff_row
+
+    huffmans <= huff_table
+
+
 def run_program(*_, **__) -> None:
     """Run the program. This function is called when the input changes and
     when the page is loaded."""
@@ -237,7 +274,8 @@ def run_program(*_, **__) -> None:
 
         # we do a dry run first to get the log messages for hexdump
         bit = pyflate.Bitfield(inp)
-        _ = list(pyflate.gzip_main_bitfield(bit))
+        noop = lambda *args: None
+        _ = list(pyflate.gzip_main_bitfield(bit, noop))
 
         # restore the original log_to_html function, re-run the program
         # and print the hexdump
@@ -245,7 +283,9 @@ def run_program(*_, **__) -> None:
         inp = io.BytesIO(buf)
         bit = pyflate.Bitfield(inp)
         print_hexdump(buf)
-        _ = list(pyflate.gzip_main_bitfield(bit))
+        huff1, huff2 = pyflate.gzip_main_bitfield(bit, noop)
+        visualize_huffman(huff1, "huffman_browser_table1")
+        visualize_huffman(huff2, "huffman_browser_table2", is_first=False)
 
         # Print the compression result
         summary = f"Compressed {len(s)} bytes to {len(buf)} bytes."

@@ -24,7 +24,8 @@
 3. hexdump (10% of the height)
 4. selected bits (2 lines)
 5. log (flexible height)
-6. footer (2 lines)
+6. huffman browser (3 lines)
+7. footer (2 lines)
 
 let's use flexbox for this. don't allow the main container to scroll, but allow the individual sections to scroll if needed.
 
@@ -40,10 +41,6 @@ body {
   overflow: hidden;
 }
 
-.flex-container > * {
-  flex: 1;
-  overflow: auto;
-}
 
 .input {
   height: 2em;
@@ -73,6 +70,34 @@ body {
 #output {
     flex: 1;
     /* occupy all remaining space */
+}
+
+#huffman_browser {
+    height: 6em;
+    overflow: auto;
+    display: flex;
+    flex-direction: row;
+}
+
+#huffman_browser_table1, #huffman_browser_table2 {
+    width: 50%;
+    height: 100%;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid black;
+}
+
+/* make th sticky */
+th {
+    position: sticky;
+    top: 0;
+    background-color: white;
 }
 
 .footer {
@@ -105,7 +130,14 @@ Selected bits: <span id="selected_bits"></span>
 <pre id="output">Loading a demo of pyflate2. This will take a few seconds...
 </pre>
 
-<!-- 6. footer -->
+<!-- 6. huffman browser. inside there are two tables, split horizontally
+    using flexbox -->
+<span id="huffman_browser">
+    <span id="huffman_browser_table1"></span>
+    <span id="huffman_browser_table2"></span>
+</span>
+
+<!-- 7. footer -->
 <p class="footer">
     Code that's running this demo can be found at:
 

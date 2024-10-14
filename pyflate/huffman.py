@@ -23,6 +23,11 @@ class HuffmanLength:
         self.reverse_symbol: T.Optional[int] = None
 
     def __repr__(self) -> str:
+        if self.reverse_symbol is None:
+            return (
+                f'HL(code={self.code}, bits={self.bits}, '
+                f'reverse_symbol={self.reverse_symbol})'
+            )
         return (
             f'HL(code={self.code}, bits={self.bits}, '
             f'reverse_symbol={hex(self.reverse_symbol)})'

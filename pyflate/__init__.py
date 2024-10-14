@@ -224,12 +224,15 @@ def load_huffman_tables(b: Bitfield, blocktype: int) -> T.Tuple[HuffmanTable, Hu
     return main_literals, main_distances
 
 
-def gzip_main_bitfield(b: Bitfield) -> bytes:
+T_WR_CB = T.Callable[[bytes], None]
+def gzip_main_bitfield(b: Bitfield, write_callback: T_WR_CB) -> T.Iterator[bytes]:
 
     read_gzip_header(b)
 
     log("gzip header skip", b.tell())
     out = b""
+
+    main_literals = main_distances = None
 
     # iterate over all blocks
     while True:
@@ -250,7 +253,7 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
             for i in range(length):
                 toadd += bytes([b.readbits(8)])
                 out += toadd
-                yield toadd
+                write_callback(toadd)
             continue
 
         main_literals, main_distances = load_huffman_tables(b, blocktype)
@@ -277,7 +280,7 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
                 log(f'found literal {buf}. {r=}, {hex(r)=}')
                 toadd = bytes([r])
                 out += toadd
-                yield toadd
+                write_callback(toadd)
             elif 257 <= r <= 285:  # dictionary lookup
                 if literal_count > 0:
                     # print 'add 0 count', literal_count, 'bits', lz_start-literal_start, 'data', `out[-literal_count:]`
@@ -285,27 +288,30 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
                 log("reading", extra_length_bits(r), "extra bits for len")
                 length_extra = b.readbits(extra_length_bits(r))
                 length = length_base(r) + length_extra
+                log("length", length)
 
                 r1 = main_distances.find_next_symbol(b)
+                log("r1=", r1)
                 if 0 <= r1 <= 29:
                     log("reading", extra_distance_bits(r1), "extra bits for dist")
                     distance = distance_base(r1) + b.readbits(
                         extra_distance_bits(r1)
                     )
+                    log("distance", distance)
                     cached_length = length
                     while length > distance:
                         toadd = out[-distance:]
                         out += toadd
-                        yield toadd
+                        write_callback(toadd)
                         length -= distance
                     if length == distance:
                         toadd = out[-distance:]
                         out += toadd
-                        yield toadd
+                        write_callback(toadd)
                     else:
                         toadd = out[-distance : length - distance]
                         out += toadd
-                        yield toadd
+                        write_callback(toadd)
                     log("dictionary lookup: length", cached_length)
                     log(
                         "copy",
@@ -341,13 +347,14 @@ def gzip_main_bitfield(b: Bitfield) -> bytes:
     # print 'deflate-end-of-stream', 5, 'beginning at', footer_start, 'raw data at', next_unused, 'bits', b.tellbits() - bfooter_start
     # print 'crc', hex(crc), 'final length', final_length
     # print 'header 0 count 0 bits', b.tellbits()-bfooter_start
-
-    return out
+    return (main_literals, main_distances)
 
 
 def gzip_main(f: T.BinaryIO) -> bytes:
     b = Bitfield(f)
     out = ""
-    for buf in gzip_main_bitfield(b):
+    def write_callback(buf: bytes) -> None:
+        nonlocal out
         out += buf
+    gzip_main_bitfield(b, write_callback)
     return out

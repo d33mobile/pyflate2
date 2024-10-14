@@ -16,6 +16,7 @@ There are also convenience functions for gzip format, such as align().
 # You may use and distribute this code under any DFSG-compatible
 # license (eg. BSD, GNU GPLv2).
 
+import logging  # for __main__ testing only
 import typing as T
 from pyflate.log import log
 
