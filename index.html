@@ -47,6 +47,14 @@ make sections stick to the top and bottom of the container, and make the middle 
     */
 }
 
+.col_input_container { background-color: var(--input_container_color); }
+.col_bit_explanation { background-color: var(--bit_explanation_color); }
+.col_hexdump { background-color: var(--hexdump_color); }
+.col_selected_bits_container { background-color: var(--selected_bits_container_color); }
+.col_output { background-color: var(--output_color); }
+.col_huffman_browser { background-color: var(--huffman_browser_color); }
+.col_footer { background-color: var(--footer_color); }
+
 body {
   display: flex;
   flex-direction: column;
@@ -203,22 +211,27 @@ td, th {
 
     <p>Here's a quick overview of the sections of the website:</p>
 
-    <p>1. <strong>Input text</strong>: you can change the text here. Once you do, the page will
+    <p class="col_input_container"
+    >1. <strong>Input text</strong>: you can change the text here. Once you do, the page will
     show you the compressed version of the text, as well as the binary
     representation of the compressed data.</p>
 
-    <p>2. <strong>Compression result</strong>: this section shows you how much the data was
+    <p class="col_bit_explanation"
+    >2. <strong>Compression result</strong>: this section shows you how much the data was
     compressed. If the number is negative, it means the data was made bigger
     by compression. This happens when the data is too small to compress or
     when the data is already tightly packed, e.g. compressed data or
     encrypted.</p>
 
-    <p>3. <strong>Hexdump</strong>: this section shows you the binary representation of the
+    <p class="col_hexdump"
+    >3. <strong>Hexdump</strong>: this section shows you the binary representation of the
     compressed data. You can hover over the bits to see their meaning.</p>
 
-    <p>For example, let's analyze following example line:</p>
+    <p class="col_hexdump"
+    >For example, let's analyze following example line:</p>
 
-    <pre><span>00000008  02 ff f3 48  [</span><span style="color:
+    <pre class="col_hexdump"
+    ><span>00000008  02 ff f3 48  [</span><span style="color:
     #9AC261;">00000010</span><span> </span><span style="color:
     #A4529A">11111111<span> </span><span style="color:
     #E8B274;">11110</span><span style="color:
@@ -228,19 +241,23 @@ td, th {
     ><span>] </span><span>.</span><span>.</span><span>.</span><span>H</span
     ></pre>
 
-    <p>On the left, you see the offset in the data (00000008 in hexadecimal,
+    <p class="col_hexdump"
+    >On the left, you see the offset in the data (00000008 in hexadecimal,
     which means that we're starting at the 8th byte).</p>
 
-    <p>In the middle, you see the
+    <p class="col_hexdump"
+    >In the middle, you see the
     hexadecimal representation of the data. On the right, you see the binary
     representation of the same data. The binary representation is interactive:
     you can hover over the bits to see their meaning. The bits are also
     color-coded so that you can see the structure of the data more easily.
 
-    <p>The final row shows the ASCII representation of the data. Non-printable
+    <p class="col_hexdump"
+    >The final row shows the ASCII representation of the data. Non-printable
     characters are shown as dots.</p>
 
-    <p>4. <strong>Selected bits</strong>: this section shows you the bits
+    <p class="col_selected_bits_container"
+    >4. <strong>Selected bits</strong>: this section shows you the bits
     you've selected in the hexdump. It shows you the binary and hexadecimal
     representation of the bits you've selected. It can be useful, because
     the remaining parts of the page use different representations and
@@ -248,7 +265,8 @@ td, th {
     byte-wise but left to right byte-wise. Let's come back to the example
     line from the hexdump:</p>
 
-    <pre><span>00000008  02 ff f3 48  [</span><span style="color:
+    <pre class="col_selected_bits_container"
+    ><span>00000008  02 ff f3 48  [</span><span style="color:
     #9AC261;">00000010</span><span> </span><span style="color:
     #A4529A">11111111<span> </span><span style="color:
     #E8B274;">11110</span><span style="color:
@@ -258,7 +276,8 @@ td, th {
     ><span>] </span><span>.</span><span>.</span><span>.</span><span>H</span
     ></pre>
 
-    <p>The first two groups are "normal" 8-bit bytes: <span style="color:
+    <p class="col_selected_bits_container"
+    >The first two groups are "normal" 8-bit bytes: <span style="color:
     #9AC261;">00000010</span> and <span style="color:#A4529A;">11111111</span>.
     Then there's a 3-bit group that breaks the alignment: <span style="color:
     #43867B;">011</span>. The next group is <span style="color:#E8B274;">
@@ -269,26 +288,31 @@ td, th {
     was put into the remaining space in the last byte. Can you see why that
     can be confusing and I decided to add the extra highlighting?</p>
 
-    <p>5. <strong>Log</strong>: this section shows you the log messages from the
+    <p class="col_output"
+    >5. <strong>Log</strong>: this section shows you the log messages from the
     compression algorithm. It can be useful to understand how the compression
     works. You can hover over the log messages to see the corresponding bits
     in the hexdump. Consider the following example log message:</p>
 
-    <pre>[91] found literal b'H'. r=72, hex(r)=0x48</pre>
+    <pre class="col_output"
+    >[91] found literal b'H'. r=72, hex(r)=0x48</pre>
 
-    <p>The number in square brackets is the bit number. The message tells you
+    <p class="col_output"
+    >The number in square brackets is the bit number. The message tells you
     that the algorithm found a literal "H" in the input data. The "r" is the
     reverse symbol, which is the Huffman code for the literal "H". The
     hexadecimal representation of "r" is 0x48. You can find the corresponding
     bits in the hexdump by hovering over the log message.</p>
 
-    <p>6. <strong>Huffman browser</strong>: this section shows you the Huffman
+    <p class="col_huffman_browser"
+    >6. <strong>Huffman browser</strong>: this section shows you the Huffman
     codes used in the compression algorithm. The first table shows you the
     Huffman codes for the literals and the second table shows you the Huffman
     codes for the lengths. The second table is used to compress the length
     of the repeated literals and is used less frequently.</p>
 
-    <p>You can read more about huffman coding here:
+    <p class="col_huffman_browser"
+    >You can read more about huffman coding here:
     <a href="https://en.wikipedia.org/wiki/Huffman_coding">
     https://en.wikipedia.org/wiki/Huffman_coding
     </a></p>
