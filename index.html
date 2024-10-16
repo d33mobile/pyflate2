@@ -262,7 +262,7 @@ td, th {
     representation of the bits you've selected. It can be useful, because
     the remaining parts of the page use different representations and
     the way bits are packed in gzip files can be confusing: left to right
-    byte-wise but left to right byte-wise. Let's come back to the example
+    byte-wise but right to left bit-wise. Let's come back to the example
     line from the hexdump:</p>
 
     <pre class="col_selected_bits_container"
@@ -280,9 +280,10 @@ td, th {
     >The first two groups are "normal" 8-bit bytes: <span style="color:
     #9AC261;">00000010</span> and <span style="color:#A4529A;">11111111</span>.
     Then there's a 3-bit group that breaks the alignment: <span style="color:
-    #43867B;">011</span>. The next group is <span style="color:#E8B274;">
-    00011110</span>, which is broken down into two parts: 
-    <span style="color:#E8B274;">11110</span> and
+    #43867B;">011</span>. Note that the allocation always starts from the
+    right, which also the case here. The next group is
+    <span style="color:#E8B274;">00011110</span>, which is broken down into
+    two parts: <span style="color:#E8B274;">11110</span> and
     <span style="color:#E8B274;">000</span>.
     The last group here is <span style="color:#7E64C9;">01001</span>, which
     was put into the remaining space in the last byte. Can you see why that
