@@ -41,10 +41,17 @@ body {
   overflow: hidden;
 }
 
+/* input container. button is on the right, input box occupies the rest of the space */
+.input_container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    height: 4em;
+}
 
 .input {
-  height: 2em;
-  font-size: 20px;
+    flex: 1;
+    /* occupy all remaining space */
 }
 
 .bit_explanation {
@@ -98,12 +105,143 @@ td, th {
     padding: 1em;
 }
 
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+#close_button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+#close_button:hover,
+#close_button:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 </style>
 
 
 
 <!-- 1. input text -->
+<span class="input_container">
 <input type="text" id="input" value="Hello, world!" class="input">
+<button disabled id="help_button">Help <span id="loading_label">(please wait for loading first...)</span></button>
+</span>
+
+<div class="modal">
+
+  <div class="modal-content">
+    <span id="close_button">&times;</span>
+    <p>Hi! Congrats on finding my little page! Its goal is to teach you about
+    how computers compress data, based on the example of "gzip" algorithm.</p>
+
+    <p>If you need more information, consider reading the following article:
+
+    <a href="https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art001">
+    https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art001
+    </a></p>
+
+    <p>Here's a quick overview of the sections of the website:</p>
+
+    <p>1. <strong>Input text</strong>: you can change the text here. Once you do, the page will
+    show you the compressed version of the text, as well as the binary
+    representation of the compressed data.</p>
+
+    <p>2. <strong>Compression result</strong>: this section shows you how much the data was
+    compressed. If the number is negative, it means the data was made bigger
+    by compression. This happens when the data is too small to compress or
+    when the data is already tightly packed, e.g. compressed data or
+    encrypted.</p>
+
+    <p>3. <strong>Hexdump</strong>: this section shows you the binary representation of the
+    compressed data. You can hover over the bits to see their meaning.
+
+    On the left, you see the offset in the data. In the middle, you see the
+    hexadecimal representation of the data. On the right, you see the binary
+    representation of the data. The binary representation is interactive:
+    you can hover over the bits to see their meaning.
+
+    The final row shows the ASCII representation of the data. Non-printable
+    characters are shown as dots.</p>
+
+    <p>4. <strong>Selected bits</strong>: this section shows you the bits
+    you've selected in the hexdump. It shows you the binary and hexadecimal
+    representation of the bits you've selected. It can be useful, because
+    the remaining parts of the page use different representations and
+    the way bits are packed in gzip files can be confusing (right to left
+    bit-wise, but left to right byte-wise).</p>
+
+    <p>5. <strong>Log</strong>: this section shows you the log messages from the
+    compression algorithm. It can be useful to understand how the compression
+    works. You can hover over the log messages to see the corresponding bits
+    in the hexdump. Consider the following example log message:</p>
+
+    <pre>[91] found literal b'H'. r=72, hex(r)=0x48</pre>
+
+    <p>The number in square brackets is the bit number. The message tells you
+    that the algorithm found a literal "H" in the input data. The "r" is the
+    reverse symbol, which is the Huffman code for the literal "H". The
+    hexadecimal representation of "r" is 0x48. You can find the corresponding
+    bits in the hexdump by hovering over the log message.</p>
+
+    <p>6. <strong>Huffman browser</strong>: this section shows you the Huffman
+    codes used in the compression algorithm. The first table shows you the
+    Huffman codes for the literals and the second table shows you the Huffman
+    codes for the lengths. The second table is used to compress the length
+    of the repeated literals and is used less frequently.</p>
+
+    <p>You can read more about huffman coding here:
+    <a href="https://en.wikipedia.org/wiki/Huffman_coding">
+    https://en.wikipedia.org/wiki/Huffman_coding
+    </a></p>
+
+    <p>That's it! I hope you enjoy the page and learn something new! If you
+    have any questions, feel free to reach out to me in a Github issue here:
+
+    <a href="https://github.com/d33mobile/pyflate2/issues/new">
+        https://github.com/d33mobile/pyflate2/issues/new
+    </a></p>
+
+    <p>Cheers,</p><p> ~d33tah</p>
+
+  </div>
+
+</div>
+
+<script>
+    // remove the loading text
+    document.getElementById("help_button").onclick = function() {
+        document.querySelector(".modal").style.display = "block";
+    }
+    document.getElementById("close_button").onclick = function() {
+        document.querySelector(".modal").style.display = "none";
+    }
+</script>
+
 
 <!-- 2. compression result -->
 <span class="bit_explanation">

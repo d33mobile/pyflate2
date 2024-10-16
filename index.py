@@ -261,11 +261,19 @@ def visualize_huffman(huff1, table_class, is_first=True):
     huffmans <= huff_table
 
 
+def loading_done():
+    loading_label = document["loading_label"]
+    loading_label.text = ""
+    help_button = document["help_button"]
+    help_button.disabled = False
+
+
 def run_program(*_, **__) -> None:
     """Run the program. This function is called when the input changes and
     when the page is loaded."""
     # pylint: disable=global-statement
     global bit, log_to_html, log_messages
+    loading_done()
     document["output"].text = ""  # Clear previous output
     s = document["input"].value
     # Backup the original log_to_html function and replace it with a no-op
