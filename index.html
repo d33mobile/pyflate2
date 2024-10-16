@@ -214,22 +214,60 @@ td, th {
     encrypted.</p>
 
     <p>3. <strong>Hexdump</strong>: this section shows you the binary representation of the
-    compressed data. You can hover over the bits to see their meaning.
+    compressed data. You can hover over the bits to see their meaning.</p>
 
-    On the left, you see the offset in the data. In the middle, you see the
+    <p>For example, let's analyze following example line:</p>
+
+    <pre><span>00000008  02 ff f3 48  [</span><span style="color:
+    #9AC261;">00000010</span><span> </span><span style="color:
+    #A4529A">11111111<span> </span><span style="color:
+    #E8B274;">11110</span><span style="color:
+    #43867B;">011</span><span> </span><span style="color:
+    #7E64C9;">01001</span><span style="color:
+    #E8B274;">000</span><span> </span
+    ><span>] </span><span>.</span><span>.</span><span>.</span><span>H</span
+    ></pre>
+
+    <p>On the left, you see the offset in the data (00000008 in hexadecimal,
+    which means that we're starting at the 8th byte).</p>
+
+    <p>In the middle, you see the
     hexadecimal representation of the data. On the right, you see the binary
-    representation of the data. The binary representation is interactive:
-    you can hover over the bits to see their meaning.
+    representation of the same data. The binary representation is interactive:
+    you can hover over the bits to see their meaning. The bits are also
+    color-coded so that you can see the structure of the data more easily.
 
-    The final row shows the ASCII representation of the data. Non-printable
+    <p>The final row shows the ASCII representation of the data. Non-printable
     characters are shown as dots.</p>
 
     <p>4. <strong>Selected bits</strong>: this section shows you the bits
     you've selected in the hexdump. It shows you the binary and hexadecimal
     representation of the bits you've selected. It can be useful, because
     the remaining parts of the page use different representations and
-    the way bits are packed in gzip files can be confusing (right to left
-    bit-wise, but left to right byte-wise).</p>
+    the way bits are packed in gzip files can be confusing: left to right
+    byte-wise but left to right byte-wise. Let's come back to the example
+    line from the hexdump:</p>
+
+    <pre><span>00000008  02 ff f3 48  [</span><span style="color:
+    #9AC261;">00000010</span><span> </span><span style="color:
+    #A4529A">11111111<span> </span><span style="color:
+    #E8B274;">11110</span><span style="color:
+    #43867B;">011</span><span> </span><span style="color:
+    #7E64C9;">01001</span><span style="color:
+    #E8B274;">000</span><span> </span
+    ><span>] </span><span>.</span><span>.</span><span>.</span><span>H</span
+    ></pre>
+
+    <p>The first two groups are "normal" 8-bit bytes: <span style="color:
+    #9AC261;">00000010</span> and <span style="color:#A4529A;">11111111</span>.
+    Then there's a 3-bit group that breaks the alignment: <span style="color:
+    #43867B;">011</span>. The next group is <span style="color:#E8B274;">
+    00011110</span>, which is broken down into two parts: 
+    <span style="color:#E8B274;">11110</span> and
+    <span style="color:#E8B274;">000</span>.
+    The last group here is <span style="color:#7E64C9;">01001</span>, which
+    was put into the remaining space in the last byte. Can you see why that
+    can be confusing and I decided to add the extra highlighting?</p>
 
     <p>5. <strong>Log</strong>: this section shows you the log messages from the
     compression algorithm. It can be useful to understand how the compression
