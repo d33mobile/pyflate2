@@ -34,6 +34,19 @@ make sections stick to the top and bottom of the container, and make the middle 
 -->
 
 <style>
+
+:root {
+    /*
+    --input_container_color: pink;
+    --bit_explanation_color: lightblue;
+    --hexdump_color: lightgreen;
+    --selected_bits_container_color: lightcoral;
+    --output_color: lightyellow;
+    --huffman_browser_color: peachpuff;
+    --footer_color: lightgray;
+    */
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -47,7 +60,10 @@ body {
     flex-direction: row;
     justify-content: space-between;
     height: 4em;
+    background-color: var(--input_container_color);
 }
+
+.input_container > * { background-color: var(--input_container_color); }
 
 .input {
     flex: 1;
@@ -56,7 +72,10 @@ body {
 
 .bit_explanation {
     height: 6em;
+    background-color: var(--bit_explanation_color);
 }
+
+.bit_explanation > * { background-color: var(--bit_explanation_color); }
 
 #explanation_hint {
     height: 1em;
@@ -68,23 +87,35 @@ body {
 
 #hexdump {
   height: 15%;
+  background-color: var(--hexdump_color);
 }
+
+#hexdump > * { background-color: var(--hexdump_color); }
 
 .selected_bits_container {
   height: 2em;
+  background-color: var(--selected_bits_container_color);
 }
+
+.selected_bits_container > * { background-color: var(--selected_bits_container_color); }
 
 #output {
     flex: 1;
     /* occupy all remaining space */
+    background-color: var(--output_color);
 }
+
+#output > * { background-color: var(--output_color); }
 
 #huffman_browser {
     height: 6em;
     overflow: auto;
     display: flex;
     flex-direction: row;
+    background-color: var(--huffman_browser_color);
 }
+
+#huffman_browser > * { background-color: var(--huffman_browser_color); }
 
 #huffman_browser_table1, #huffman_browser_table2 {
     width: 50%;
@@ -103,7 +134,10 @@ td, th {
 .footer {
     height: 2em;
     padding: 1em;
+    background-color: var(--footer_color);
 }
+
+.footer > * { background-color: var(--footer_color); }
 
 .modal {
   display: none; /* Hidden by default */
